@@ -62,6 +62,7 @@
 
 #ifdef STM32F722xx
 #define USE_ITCM_RAM
+#define USE_FAST_RAM
 #endif
 #ifdef STM32F7
 #define USE_DSHOT
@@ -102,6 +103,8 @@
 #else
 #define FAST_RAM
 #endif // USE_FAST_RAM
+
+#define SRAM2						__attribute__ ((section(".sram2"), aligned(4)))
 
 
 #define USE_CLI
