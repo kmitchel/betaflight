@@ -45,6 +45,7 @@
 #endif
 
 #ifdef STM32F4
+#define USE_FAST_RAM
 #define USE_DSHOT
 #define USE_ESC_SENSOR
 #define I2C3_OVERCLOCK true
@@ -60,11 +61,9 @@
 
 #endif // STM32F4
 
-#ifdef STM32F722xx
+#ifdef STM32F7
 #define USE_ITCM_RAM
 #define USE_FAST_RAM
-#endif
-#ifdef STM32F7
 #define USE_DSHOT
 #define USE_ESC_SENSOR
 #define I2C3_OVERCLOCK true
