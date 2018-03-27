@@ -45,6 +45,7 @@
 #endif
 
 #ifdef STM32F4
+#define USE_SRAM2
 #define USE_FAST_RAM
 #define USE_DSHOT
 #define USE_ESC_SENSOR
@@ -62,6 +63,7 @@
 #endif // STM32F4
 
 #ifdef STM32F7
+#define USE_SRAM2
 #define USE_ITCM_RAM
 #define USE_FAST_RAM
 #define USE_DSHOT
@@ -103,7 +105,11 @@
 #define FAST_RAM
 #endif // USE_FAST_RAM
 
+#ifdef USE_SRAM2
 #define SRAM2						__attribute__ ((section(".sram2"), aligned(4)))
+#else
+#define SRAM2
+#endif
 
 
 #define USE_CLI
