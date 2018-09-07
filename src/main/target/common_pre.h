@@ -124,16 +124,16 @@
 #define USE_BRUSHED_ESC_AUTODETECT  // Detect if brushed motors are connected and set defaults appropriately to avoid motors spinning on boot
 #define USE_CLI
 #define USE_GYRO_REGISTER_DUMP  // Adds gyroregisters command to cli to dump configured register values
-#define USE_PPM
+//#define USE_PPM
 #define USE_PWM
 #define USE_SERIAL_RX
 #define USE_SERIALRX_CRSF       // Team Black Sheep Crossfire protocol
 #define USE_SERIALRX_IBUS       // FlySky and Turnigy receivers
 #define USE_SERIALRX_SBUS       // Frsky and Futaba receivers
 #define USE_SERIALRX_SPEKTRUM   // SRXL, DSM2 and DSMX protocol
-#define USE_SERIALRX_SUMD       // Graupner Hott protocol
-#define USE_SERIALRX_SUMH       // Graupner legacy protocol
-#define USE_SERIALRX_XBUS       // JR
+//#define USE_SERIALRX_SUMD       // Graupner Hott protocol
+//#define USE_SERIALRX_SUMH       // Graupner legacy protocol
+//#define USE_SERIALRX_XBUS       // JR
 
 
 
@@ -148,12 +148,17 @@
 #define USE_BLACKBOX
 #define USE_RESOURCE_MGMT
 #define USE_RUNAWAY_TAKEOFF     // Runaway Takeoff Prevention (anti-taz)
-#define USE_SERVOS
+//#define USE_SERVOS
 #define USE_TELEMETRY
 #define USE_TELEMETRY_FRSKY_HUB
-#define USE_TELEMETRY_HOTT
-#define USE_TELEMETRY_LTM
+//#define USE_TELEMETRY_HOTT
+//#define USE_TELEMETRY_LTM
 #define USE_TELEMETRY_SMARTPORT
+#define USE_ITERM_RELAX
+#define USE_RC_SMOOTHING_FILTER
+#define USE_ABSOLUTE_CONTROL
+#define USE_SMART_FEEDFORWARD
+#define USE_THROTTLE_BOOST
 #endif
 
 #if (FLASH_SIZE > 128)
