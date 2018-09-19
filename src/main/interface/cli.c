@@ -3672,7 +3672,7 @@ static void cliVersion(char *cmdline)
 {
     UNUSED(cmdline);
 
-    cliPrintLinef("# %s / %s (%s) %s %s / %s (%s) MSP API: %s",
+    cliPrintLinef("# %s / %s (%s) %s %s / %s (%s) silver_black MSP API: %s",
         FC_FIRMWARE_NAME,
         targetName,
         systemConfig()->boardIdentifier,

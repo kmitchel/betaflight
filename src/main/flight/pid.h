@@ -103,6 +103,8 @@ typedef struct pidProfile_s {
     uint16_t dterm_notch_hz;                // Biquad dterm notch hz
     uint16_t dterm_notch_cutoff;            // Biquad dterm notch low cutoff
 
+    uint8_t dyn_dlpf_cutoff_percent;
+
     pidf_t  pid[PID_ITEM_COUNT];
 
     uint8_t dterm_filter_type;              // Filter selection for dterm
@@ -132,6 +134,7 @@ typedef struct pidProfile_s {
     uint8_t feedForwardTransition;          // Feed forward weight transition
     uint16_t crash_limit_yaw;               // limits yaw errorRate, so crashes don't cause huge throttle increase
     uint16_t itermLimit;
+    uint8_t dterm_filter2_type;              // Filter selection for dterm
     uint16_t dterm_lowpass2_hz;             // Extra PT1 Filter on D in hz
     uint8_t crash_recovery;                 // off, on, on and beeps when it is in crash recovery mode
     uint8_t throttle_boost;                 // how much should throttle be boosted during transient changes 0-100, 100 adds 10x hpf filtered throttle
@@ -213,3 +216,6 @@ float pidLevel(int axis, const pidProfile_t *pidProfile,
     const rollAndPitchTrims_t *angleTrim, float currentPidSetpoint);
 float calcHorizonLevelStrength(void);
 #endif
+#ifdef USE_GYRO_DATA_ANALYSE
+void pidUpdateDTermFilters(uint8_t axis, float centerFreq);
+#endif // USE_GYRO_DATA_ANALYSE

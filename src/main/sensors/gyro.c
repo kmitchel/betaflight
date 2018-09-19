@@ -206,6 +206,9 @@ PG_RESET_TEMPLATE(gyroConfig_t, gyroConfig,
     .dyn_filter_width_percent = 40,
     .dyn_fft_location = DYN_FFT_AFTER_STATIC_FILTERS,
     .dyn_filter_range = DYN_FILTER_RANGE_MEDIUM,
+    .dyn_gyro_lpf = true,
+    .dyn_dterm_lpf = true,
+    .dyn_lpf_cutoff_percent = 60,
 );
 
 #ifdef USE_MULTI_GYRO
@@ -525,6 +528,10 @@ bool gyroInit(void)
     return ret;
 }
 
+#ifdef USE_GYRO_DATA_ANALYSE
+bool isGlpf = false;
+#endif //USE_GYRO_DATA_ANALYSE
+
 void gyroInitLowpassFilterLpf(gyroSensor_t *gyroSensor, int slot, int type, uint16_t lpfHz)
 {
     filterApplyFnPtr *lowpassFilterApplyFn;
@@ -534,6 +541,11 @@ void gyroInitLowpassFilterLpf(gyroSensor_t *gyroSensor, int slot, int type, uint
     case FILTER_LOWPASS:
         lowpassFilterApplyFn = &gyroSensor->lowpassFilterApplyFn;
         lowpassFilter = gyroSensor->lowpassFilter;
+        #ifdef USE_GYRO_DATA_ANALYSE
+        if (type == FILTER_PT1){
+            isGlpf = true;
+        }
+        #endif //USE_GYRO_DATA_ANALYSE
         break;
 
     case FILTER_LOWPASS2:
@@ -1086,3 +1098,13 @@ uint8_t gyroReadRegister(uint8_t whichSensor, uint8_t reg)
     return mpuGyroReadRegister(gyroSensorBusByDevice(whichSensor), reg);
 }
 #endif // USE_GYRO_REGISTER_DUMP
+
+#ifdef USE_GYRO_DATA_ANALYSE
+void gyroUpdatelpf(uint8_t axis, float cutoffFreq)
+{
+    if (isGlpf){
+        const float gyroDt = gyro.targetLooptime * 1e-6f;
+        pt1FilterUpdateCutoff(&gyroSensor1.lowpassFilter[axis].pt1FilterState, pt1FilterGain(cutoffFreq, gyroDt));
+    }
+}
+#endif //USE_GYRO_DATA_ANALYSE
