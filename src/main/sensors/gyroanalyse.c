@@ -321,6 +321,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
             centerFreq = constrain(centerFreq, dynamicNotchMinCenterHz, dynamicNotchMaxCenterHz);
             centerFreq = biquadFilterApply(&state->detectedFrequencyFilter[state->updateAxis], centerFreq);
             centerFreq = constrain(centerFreq, dynamicNotchMinCenterHz, dynamicNotchMaxCenterHz);
+            state->prevCenterFreq[state->updateAxis] = state->centerFreq[state->updateAxis];
             state->centerFreq[state->updateAxis] = centerFreq;
 
             if (state->updateAxis == 0) {
@@ -338,16 +339,19 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
         {
             // 7us
             // calculate cutoffFreq and notch Q, update notch filter
-            const float cutoffFreq = fmax(state->centerFreq[state->updateAxis] * dynamicFilterWidthFactor, dynamicNotchMinCutoffHz);
-            const float lpfCutoffFreq = fmax(state->centerFreq[state->updateAxis] * dynamicLpfCutoffFactor, lpfMinCutoff);
-            const float notchQ = filterGetNotchQ(state->centerFreq[state->updateAxis], cutoffFreq);
-            biquadFilterUpdate(&notchFilterDyn[state->updateAxis], state->centerFreq[state->updateAxis], gyro.targetLooptime, notchQ, FILTER_NOTCH);
 
-            if (dynGyrolpf) {
-                gyroUpdatelpf(state->updateAxis, lpfCutoffFreq);
-            }
-            if (dynDtermlpf) {
-                pidUpdateDTermFilters(state->updateAxis, state->centerFreq[state->updateAxis]);
+            if(state->prevCenterFreq[state->updateAxis] != state->centerFreq[state->updateAxis]) {
+                const float cutoffFreq = fmax(state->centerFreq[state->updateAxis] * dynamicFilterWidthFactor, dynamicNotchMinCutoffHz);
+                const float lpfCutoffFreq = fmax(state->centerFreq[state->updateAxis] * dynamicLpfCutoffFactor, lpfMinCutoff);
+                const float notchQ = filterGetNotchQ(state->centerFreq[state->updateAxis], cutoffFreq);
+                biquadFilterUpdate(&notchFilterDyn[state->updateAxis], state->centerFreq[state->updateAxis], gyro.targetLooptime, notchQ, FILTER_NOTCH);
+
+                if (dynGyrolpf) {
+                    gyroUpdatelpf(state->updateAxis, lpfCutoffFreq);
+                }
+                if (dynDtermlpf) {
+                    pidUpdateDTermFilters(state->updateAxis, state->centerFreq[state->updateAxis]);
+                }
             }
 
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);

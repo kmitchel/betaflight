@@ -1156,11 +1156,10 @@ bool pidAntiGravityEnabled(void)
 void pidUpdateDTermFilters(uint8_t axis, float centerFreq)
 {
     float dlpfCutoffFreq = fmax(centerFreq * dynamicdLpfCutoffFactor, dlpfMinCutoff);
-    if (isDlpf){
-        pt1FilterUpdateCutoff(&dtermLowpass[axis].pt1Filter, pt1FilterGain(dlpfCutoffFreq, dT));
-    }
     if (isDlpfBi){
         biquadFilterUpdateLPF(&dtermLowpass[axis].biquadFilter, dlpfCutoffFreq, targetPidLooptime);
-    }   
+    } else if (isDlpf){
+        pt1FilterUpdateCutoff(&dtermLowpass[axis].pt1Filter, pt1FilterGain(dlpfCutoffFreq, dT));
+    }
 }
 #endif //USE_GYRO_DATA_ANALYSE
