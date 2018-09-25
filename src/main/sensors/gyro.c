@@ -530,6 +530,7 @@ bool gyroInit(void)
 
 #ifdef USE_GYRO_DATA_ANALYSE
 bool isGlpf = false;
+bool isBiGlpf = false;
 #endif //USE_GYRO_DATA_ANALYSE
 
 void gyroInitLowpassFilterLpf(gyroSensor_t *gyroSensor, int slot, int type, uint16_t lpfHz)
@@ -544,6 +545,8 @@ void gyroInitLowpassFilterLpf(gyroSensor_t *gyroSensor, int slot, int type, uint
         #ifdef USE_GYRO_DATA_ANALYSE
         if (type == FILTER_PT1){
             isGlpf = true;
+        } else if (type == FILTER_BIQUAD){
+            isBiGlpf = true;
         }
         #endif //USE_GYRO_DATA_ANALYSE
         break;
@@ -578,7 +581,7 @@ void gyroInitLowpassFilterLpf(gyroSensor_t *gyroSensor, int slot, int type, uint
             }
             break;
         case FILTER_BIQUAD:
-            *lowpassFilterApplyFn = (filterApplyFnPtr) biquadFilterApply;
+            *lowpassFilterApplyFn = (filterApplyFnPtr) biquadFilterApplyDF1;
             for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
                 biquadFilterInitLPF(&lowpassFilter[axis].biquadFilterState, lpfHz, gyro.targetLooptime);
             }
@@ -1102,9 +1105,11 @@ uint8_t gyroReadRegister(uint8_t whichSensor, uint8_t reg)
 #ifdef USE_GYRO_DATA_ANALYSE
 void gyroUpdatelpf(uint8_t axis, float cutoffFreq)
 {
-    if (isGlpf){
+    if (isGlpf) {
         const float gyroDt = gyro.targetLooptime * 1e-6f;
         pt1FilterUpdateCutoff(&gyroSensor1.lowpassFilter[axis].pt1FilterState, pt1FilterGain(cutoffFreq, gyroDt));
+    } else if (isBiGlpf) {
+        biquadFilterUpdateLPF(&gyroSensor1.lowpassFilter[axis].biquadFilterState, cutoffFreq, gyro.targetLooptime);
     }
 }
 #endif //USE_GYRO_DATA_ANALYSE
