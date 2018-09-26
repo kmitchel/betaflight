@@ -208,7 +208,8 @@ PG_RESET_TEMPLATE(gyroConfig_t, gyroConfig,
     .dyn_filter_range = DYN_FILTER_RANGE_MEDIUM,
     .dyn_gyro_lpf = true,
     .dyn_dterm_lpf = true,
-    .dyn_lpf_cutoff_percent = 60,
+    .dyn_max_glpf_hz = 450,
+    .dyn_max_dlpf_hz = 450,
 );
 
 #ifdef USE_MULTI_GYRO
@@ -1103,13 +1104,26 @@ uint8_t gyroReadRegister(uint8_t whichSensor, uint8_t reg)
 #endif // USE_GYRO_REGISTER_DUMP
 
 #ifdef USE_GYRO_DATA_ANALYSE
-void gyroUpdatelpf(uint8_t axis, float cutoffFreq)
+void gyroUpdatelpf(float throttle)
 {
-    if (isGlpf) {
-        const float gyroDt = gyro.targetLooptime * 1e-6f;
-        pt1FilterUpdateCutoff(&gyroSensor1.lowpassFilter[axis].pt1FilterState, pt1FilterGain(cutoffFreq, gyroDt));
-    } else if (isBiGlpf) {
-        biquadFilterUpdateLPF(&gyroSensor1.lowpassFilter[axis].biquadFilterState, cutoffFreq, gyro.targetLooptime);
+    if (gyroConfig()->dyn_gyro_lpf) {
+        throttle = throttle - (throttle * throttle * throttle) / 3;
+
+        int cutoffFreq = throttle * gyroConfig()->dyn_max_glpf_hz * 3 / 2;
+        cutoffFreq = fmax(gyroConfig()->gyro_lowpass_hz, cutoffFreq);
+
+        DEBUG_SET(DEBUG_FFT_FREQ, 1, cutoffFreq);
+
+        if (isGlpf) {
+            for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                const float gyroDt = gyro.targetLooptime * 1e-6f;
+                pt1FilterUpdateCutoff(&gyroSensor1.lowpassFilter[axis].pt1FilterState, pt1FilterGain(cutoffFreq, gyroDt));
+            }
+        } else if (isBiGlpf) {
+            for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                biquadFilterUpdateLPF(&gyroSensor1.lowpassFilter[axis].biquadFilterState, cutoffFreq, gyro.targetLooptime);
+            }
+        }
     }
 }
 #endif //USE_GYRO_DATA_ANALYSE

@@ -217,5 +217,5 @@ float pidLevel(int axis, const pidProfile_t *pidProfile,
 float calcHorizonLevelStrength(void);
 #endif
 #ifdef USE_GYRO_DATA_ANALYSE
-void pidUpdateDTermFilters(uint8_t axis, float centerFreq);
+void dTermUpdatelpf(float throttle);
 #endif // USE_GYRO_DATA_ANALYSE

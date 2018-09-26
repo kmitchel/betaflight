@@ -69,11 +69,7 @@ static uint16_t FAST_RAM_ZERO_INIT   dynamicNotchMinCenterHz;
 static uint16_t FAST_RAM_ZERO_INIT   dynamicNotchMaxCenterHz;
 static uint16_t FAST_RAM_ZERO_INIT   dynamicNotchMinCutoffHz;
 static float FAST_RAM_ZERO_INIT      dynamicFilterWidthFactor;
-static float FAST_RAM_ZERO_INIT      dynamicLpfCutoffFactor;
 static uint8_t dynamicFilterRange;
-static bool dynGyrolpf;
-static bool dynDtermlpf;
-static int16_t FAST_RAM_ZERO_INIT   lpfMinCutoff;
 
 // Hanning window, see https://en.wikipedia.org/wiki/Window_function#Hann_.28Hanning.29_window
 static FAST_RAM_ZERO_INIT float hanningWindow[FFT_WINDOW_SIZE];
@@ -89,10 +85,6 @@ void gyroDataAnalyseInit(uint32_t targetLooptimeUs)
 #endif
 
     dynamicFilterRange = gyroConfig()->dyn_filter_range;
-    dynGyrolpf = gyroConfig()->dyn_gyro_lpf;
-    dynDtermlpf = gyroConfig()->dyn_dterm_lpf;
-    dynamicLpfCutoffFactor = gyroConfig()->dyn_lpf_cutoff_percent / 100.0f;
-    lpfMinCutoff = gyroConfig()->gyro_lowpass_hz;
     
     fftSamplingRateHz = 1000;
     if (dynamicFilterRange == DYN_FILTER_RANGE_HIGH) {
@@ -114,7 +106,6 @@ void gyroDataAnalyseInit(uint32_t targetLooptimeUs)
     dynamicNotchMinCenterHz = fftSamplingRateHz / DYN_NOTCH_MIN_CENTRE_DIV;
     dynamicNotchMinCutoffHz = fftSamplingRateHz / DYN_NOTCH_MIN_CUTOFF_DIV;
     dynamicFilterWidthFactor = (100.0f - gyroConfig()->dyn_filter_width_percent) / 100;
-
 
     for (int i = 0; i < FFT_WINDOW_SIZE; i++) {
         hanningWindow[i] = (0.5f - 0.5f * cos_approx(2 * M_PIf * i / (FFT_WINDOW_SIZE - 1)));
@@ -329,7 +320,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
                DEBUG_SET(DEBUG_FFT_FREQ, 0, state->centerFreq[state->updateAxis]);
             }
             if (state->updateAxis == 1) {
-                DEBUG_SET(DEBUG_FFT_FREQ, 1, state->centerFreq[state->updateAxis]);
+//                DEBUG_SET(DEBUG_FFT_FREQ, 1, state->centerFreq[state->updateAxis]);
             }
             // Debug FFT_Freq carries raw gyro, gyro after first filter set, FFT centre for roll and for pitch
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);
@@ -342,16 +333,8 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
 
             if(state->prevCenterFreq[state->updateAxis] != state->centerFreq[state->updateAxis]) {
                 const float cutoffFreq = fmax(state->centerFreq[state->updateAxis] * dynamicFilterWidthFactor, dynamicNotchMinCutoffHz);
-                const float lpfCutoffFreq = fmax(state->centerFreq[state->updateAxis] * dynamicLpfCutoffFactor, lpfMinCutoff);
                 const float notchQ = filterGetNotchQ(state->centerFreq[state->updateAxis], cutoffFreq);
                 biquadFilterUpdate(&notchFilterDyn[state->updateAxis], state->centerFreq[state->updateAxis], gyro.targetLooptime, notchQ, FILTER_NOTCH);
-
-                if (dynGyrolpf) {
-                    gyroUpdatelpf(state->updateAxis, lpfCutoffFreq);
-                }
-                if (dynDtermlpf) {
-                    pidUpdateDTermFilters(state->updateAxis, state->centerFreq[state->updateAxis]);
-                }
             }
 
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);

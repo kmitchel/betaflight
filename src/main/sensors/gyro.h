@@ -97,7 +97,8 @@ typedef struct gyroConfig_s {
     uint8_t dyn_filter_range; // ignore any FFT bin below this threshold
     uint8_t dyn_gyro_lpf;
     uint8_t dyn_dterm_lpf;
-    uint8_t dyn_lpf_cutoff_percent;
+    uint16_t dyn_max_glpf_hz;
+    uint16_t dyn_max_dlpf_hz;
 
 } gyroConfig_t;
 
@@ -122,5 +123,5 @@ bool gyroYawSpinDetected(void);
 uint16_t gyroAbsRateDps(int axis);
 uint8_t gyroReadRegister(uint8_t whichSensor, uint8_t reg);
 #ifdef USE_GYRO_DATA_ANALYSE
-void gyroUpdatelpf(uint8_t axis, float cutoffFreq);
+void gyroUpdatelpf(float throttle);
 #endif //USE_GYRO_DATA_ANALYSE

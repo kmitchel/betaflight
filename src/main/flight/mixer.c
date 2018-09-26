@@ -808,6 +808,8 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs, uint8_t vbatPidCompensa
     }
 
     pidUpdateAntiGravityThrottleFilter(throttle);
+    gyroUpdatelpf(throttle);
+    dTermUpdatelpf(throttle);
     
 #if defined(USE_THROTTLE_BOOST)
     if (throttleBoost > 0.0f) {
