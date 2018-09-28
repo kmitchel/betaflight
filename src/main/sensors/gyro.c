@@ -189,7 +189,7 @@ PG_RESET_TEMPLATE(gyroConfig_t, gyroConfig,
     .gyro_hardware_lpf = GYRO_HARDWARE_LPF_NORMAL,
     .gyro_32khz_hardware_lpf = GYRO_32KHZ_HARDWARE_LPF_NORMAL,
     .gyro_lowpass_type = FILTER_PT1,
-    .gyro_lowpass_hz = 100,
+    .gyro_lowpass_hz = 80,
     .gyro_lowpass2_type = FILTER_PT1,
     .gyro_lowpass2_hz = 300,
     .gyro_high_fsr = false,
@@ -208,8 +208,8 @@ PG_RESET_TEMPLATE(gyroConfig_t, gyroConfig,
     .dyn_filter_range = DYN_FILTER_RANGE_MEDIUM,
     .dyn_gyro_lpf = true,
     .dyn_dterm_lpf = true,
-    .dyn_max_glpf_hz = 450,
-    .dyn_max_dlpf_hz = 450,
+    .dyn_max_glpf_hz = 350,
+    .dyn_max_dlpf_hz = 250,
 );
 
 #ifdef USE_MULTI_GYRO
@@ -1109,7 +1109,7 @@ void gyroUpdatelpf(float throttle)
     if (gyroConfig()->dyn_gyro_lpf) {
         throttle = throttle - (throttle * throttle * throttle) / 3;
 
-        int cutoffFreq = throttle * gyroConfig()->dyn_max_glpf_hz * 3 / 2;
+        int cutoffFreq = throttle * gyroConfig()->dyn_max_glpf_hz;
         cutoffFreq = fmax(gyroConfig()->gyro_lowpass_hz, cutoffFreq);
 
         DEBUG_SET(DEBUG_FFT_FREQ, 1, cutoffFreq);

@@ -125,7 +125,7 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .pidSumLimit = PIDSUM_LIMIT,
         .pidSumLimitYaw = PIDSUM_LIMIT_YAW,
         .yaw_lowpass_hz = 0,
-        .dterm_lowpass_hz = 150,    // dual PT1 filtering ON by default
+        .dterm_lowpass_hz = 120,    // dual PT1 filtering ON by default
         .dterm_lowpass2_hz = 200,   // second Dterm LPF ON by default
         .dterm_notch_hz = 0,
         .dterm_notch_cutoff = 0,
@@ -1155,7 +1155,7 @@ void dTermUpdatelpf(float throttle)
     if (gyroConfig()->dyn_dterm_lpf) {
         throttle = throttle - (throttle * throttle * throttle) / 3;
 
-        int cutoffFreq = throttle * gyroConfig()->dyn_max_dlpf_hz * 3 / 2;
+        int cutoffFreq = throttle * gyroConfig()->dyn_max_dlpf_hz;
         cutoffFreq = fmax(dterm_lowpass_hz, cutoffFreq);
 
         if (isDlpf) {
