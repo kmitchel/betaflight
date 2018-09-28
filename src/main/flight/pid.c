@@ -131,7 +131,6 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .dterm_notch_cutoff = 0,
         .dterm_filter_type = FILTER_BIQUAD,
         .dterm_filter2_type = FILTER_BIQUAD,
-        .dyn_dlpf_cutoff_percent = 50,
         .itermWindupPointPercent = 40,
         .vbatPidCompensation = 0,
         .pidAtMinThrottle = PID_STABILISATION_ON,

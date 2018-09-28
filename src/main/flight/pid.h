@@ -103,8 +103,6 @@ typedef struct pidProfile_s {
     uint16_t dterm_notch_hz;                // Biquad dterm notch hz
     uint16_t dterm_notch_cutoff;            // Biquad dterm notch low cutoff
 
-    uint8_t dyn_dlpf_cutoff_percent;
-
     pidf_t  pid[PID_ITEM_COUNT];
 
     uint8_t dterm_filter_type;              // Filter selection for dterm
