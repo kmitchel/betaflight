@@ -1154,7 +1154,7 @@ void dTermUpdatelpf(float throttle)
     if (gyroConfig()->dyn_dterm_lpf) {
         throttle = throttle - (throttle * throttle * throttle) / 3;
 
-        int cutoffFreq = throttle * gyroConfig()->dyn_max_dlpf_hz;
+        int cutoffFreq = throttle * gyroConfig()->dyn_max_dlpf_hz * 3 / 2;
         cutoffFreq = fmax(dterm_lowpass_hz, cutoffFreq);
 
         if (isDlpf) {
