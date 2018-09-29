@@ -1109,8 +1109,8 @@ void gyroUpdatelpf(float throttle)
     if (gyroConfig()->dyn_gyro_lpf) {
         throttle = throttle - (throttle * throttle * throttle) / 3;
 
-        int cutoffFreq = throttle * gyroConfig()->dyn_max_glpf_hz;
-        cutoffFreq = fmax(gyroConfig()->gyro_lowpass_hz, cutoffFreq) * 3 / 2;
+        int cutoffFreq = throttle * gyroConfig()->dyn_max_glpf_hz * 3 / 2;
+        cutoffFreq = fmax(gyroConfig()->gyro_lowpass_hz, cutoffFreq);
 
         DEBUG_SET(DEBUG_FFT_FREQ, 1, cutoffFreq);
 
