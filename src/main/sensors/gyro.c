@@ -209,7 +209,11 @@ PG_RESET_TEMPLATE(gyroConfig_t, gyroConfig,
     .dyn_gyro_lpf = true,
     .dyn_dterm_lpf = true,
     .dyn_max_glpf_hz = 350,
+    .dyn_min_glpf_hz = 100,
+    .dyn_idle_glpf_hz = 20,
     .dyn_max_dlpf_hz = 250,
+    .dyn_min_dlpf_hz = 100,
+    .dyn_idle_dlpf_hz = 20,
 );
 
 #ifdef USE_MULTI_GYRO
@@ -1107,10 +1111,20 @@ uint8_t gyroReadRegister(uint8_t whichSensor, uint8_t reg)
 void gyroUpdatelpf(float throttle)
 {
     if (gyroConfig()->dyn_gyro_lpf) {
-        throttle = throttle - (throttle * throttle * throttle) / 3;
+        const float dynthrottle = (throttle - (throttle * throttle * throttle) / 3) * 1.5;
+        const uint16_t max = gyroConfig()->dyn_max_glpf_hz;
+        const uint16_t min = gyroConfig()->dyn_min_glpf_hz;
+        const float idle = gyroConfig()->dyn_idle_glpf_hz / 100;
+        const float idlePoint = (idle - (idle * idle * idle) / 3) * 1.5;
+        const float invIdlePoint = 1 / (1 - idle);
+        const uint16_t diff = max - min;
+        uint16_t cutoffFreq;
 
-        int cutoffFreq = throttle * gyroConfig()->dyn_max_glpf_hz * 3 / 2;
-        cutoffFreq = fmax(gyroConfig()->gyro_lowpass_hz, cutoffFreq);
+        if (throttle < idle) {
+            cutoffFreq = min;
+        } else {
+            cutoffFreq = idle + (dynthrottle - idlePoint) * invIdlePoint * diff;
+        }
 
         DEBUG_SET(DEBUG_FFT_FREQ, 1, cutoffFreq);
 
