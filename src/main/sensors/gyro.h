@@ -97,12 +97,12 @@ typedef struct gyroConfig_s {
     uint8_t dyn_filter_range; // ignore any FFT bin below this threshold
     uint8_t dyn_gyro_lpf;
     uint8_t dyn_dterm_lpf;
-    uint16_t dyn_max_glpf_hz;
-    uint16_t dyn_min_glpf_hz;
-    uint16_t dyn_idle_glpf_hz;
-    uint16_t dyn_max_dlpf_hz;
-    uint16_t dyn_min_dlpf_hz;
-    uint16_t dyn_idle_dlpf_hz;
+    uint16_t dyn_glpf_max_hz;
+    uint16_t dyn_glpf_min_hz;
+    uint16_t dyn_glpf_idle_hz;
+    uint16_t dyn_dlpf_max_hz;
+    uint16_t dyn_dlpf_min_hz;
+    uint16_t dyn_dlpf_idle;
 
 } gyroConfig_t;
 

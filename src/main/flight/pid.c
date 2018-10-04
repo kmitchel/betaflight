@@ -1153,19 +1153,18 @@ void dTermUpdatelpf(float throttle)
 {
     if (gyroConfig()->dyn_dterm_lpf) {
         const float dynthrottle = (throttle - (throttle * throttle * throttle) / 3) * 1.5;
-        const uint16_t max = gyroConfig()->dyn_max_glpf_hz;
-        const uint16_t min = gyroConfig()->dyn_min_glpf_hz;
-        const float idle = gyroConfig()->dyn_idle_glpf_hz / 100;
+        const uint16_t max = gyroConfig()->dyn_dlpf_max_hz;
+        const uint16_t min = gyroConfig()->dyn_dlpf_min_hz;
+        const float idle = gyroConfig()->dyn_dlpf_idle / 100;
         const float idlePoint = (idle - (idle * idle * idle) / 3) * 1.5;
         const float invIdlePoint = 1 / (1 - idle);
         const uint16_t diff = max - min;
         uint16_t cutoffFreq;
 
-        if (throttle < idle) {
-            cutoffFreq = min;
-        } else {
-            cutoffFreq = idle + (dynthrottle - idlePoint) * invIdlePoint * diff;
-        }
+        cutoffFreq = min;
+        if (throttle > idle) {
+             cutoffFreq += (throttle - idlePoint) * invIdlePoint * diff;
+         }
 
         if (isDlpf) {
             for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
