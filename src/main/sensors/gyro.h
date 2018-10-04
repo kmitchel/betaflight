@@ -99,7 +99,7 @@ typedef struct gyroConfig_s {
     uint8_t dyn_dterm_lpf_enable;
     uint16_t dyn_glpf_max_hz;
     uint16_t dyn_glpf_min_hz;
-    uint16_t dyn_glpf_idle_hz;
+    uint16_t dyn_glpf_idle;
     uint16_t dyn_dlpf_max_hz;
     uint16_t dyn_dlpf_min_hz;
     uint16_t dyn_dlpf_idle;
