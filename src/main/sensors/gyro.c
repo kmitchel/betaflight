@@ -1118,11 +1118,10 @@ void gyroUpdatelpf(float throttle)
         const float idlePoint = (idle - (idle * idle * idle) / 3) * 1.5;
         const float invIdlePoint = 1 / (1 - idle);
         const uint16_t diff = max - min;
-        uint16_t cutoffFreq;
+        uint16_t cutoffFreq = min;
 
-        cutoffFreq = min;
         if (throttle > idle) {
-             cutoffFreq += (throttle - idlePoint) * invIdlePoint * diff;
+             cutoffFreq += (dynthrottle - idlePoint) * invIdlePoint * diff;
          }
 
         DEBUG_SET(DEBUG_FFT_FREQ, 1, cutoffFreq);
