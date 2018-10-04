@@ -95,8 +95,8 @@ typedef struct gyroConfig_s {
     uint8_t dyn_filter_width_percent;
     uint8_t dyn_fft_location; // before or after static filters
     uint8_t dyn_filter_range; // ignore any FFT bin below this threshold
-    uint8_t dyn_gyro_lpf;
-    uint8_t dyn_dterm_lpf;
+    uint8_t dyn_gyro_lpf_enable;
+    uint8_t dyn_dterm_lpf_enable;
     uint16_t dyn_glpf_max_hz;
     uint16_t dyn_glpf_min_hz;
     uint16_t dyn_glpf_idle_hz;

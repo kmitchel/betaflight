@@ -1151,7 +1151,7 @@ bool pidAntiGravityEnabled(void)
 #ifdef USE_GYRO_DATA_ANALYSE
 void dTermUpdatelpf(float throttle)
 {
-    if (gyroConfig()->dyn_dterm_lpf) {
+    if (gyroConfig()->dyn_dterm_lpf_enable) {
         const float dynthrottle = (throttle - (throttle * throttle * throttle) / 3) * 1.5;
         const uint16_t max = gyroConfig()->dyn_dlpf_max_hz;
         const uint16_t min = gyroConfig()->dyn_dlpf_min_hz;

@@ -206,8 +206,8 @@ PG_RESET_TEMPLATE(gyroConfig_t, gyroConfig,
     .dyn_filter_width_percent = 40,
     .dyn_fft_location = DYN_FFT_AFTER_STATIC_FILTERS,
     .dyn_filter_range = DYN_FILTER_RANGE_MEDIUM,
-    .dyn_gyro_lpf = true,
-    .dyn_dterm_lpf = true,
+    .dyn_gyro_lpf_enable = true,
+    .dyn_dterm_lpf_enable = true,
     .dyn_glpf_max_hz = 350,
     .dyn_glpf_min_hz = 100,
     .dyn_glpf_idle = 20,
@@ -1110,7 +1110,7 @@ uint8_t gyroReadRegister(uint8_t whichSensor, uint8_t reg)
 #ifdef USE_GYRO_DATA_ANALYSE
 void gyroUpdatelpf(float throttle)
 {
-    if (gyroConfig()->dyn_gyro_lpf) {
+    if (gyroConfig()->dyn_gyro_lpf_enable) {
         const float dynthrottle = (throttle - (throttle * throttle * throttle) / 3) * 1.5;
         const uint16_t max = gyroConfig()->dyn_glpf_max_hz;
         const uint16_t min = gyroConfig()->dyn_glpf_min_hz;
