@@ -208,12 +208,12 @@ PG_RESET_TEMPLATE(gyroConfig_t, gyroConfig,
     .dyn_filter_range = DYN_FILTER_RANGE_MEDIUM,
     .dyn_gyro_lpf_enable = true,
     .dyn_dterm_lpf_enable = true,
-    .dyn_glpf_max_hz = 350,
-    .dyn_glpf_min_hz = 100,
-    .dyn_glpf_idle = 20,
-    .dyn_dlpf_max_hz = 250,
-    .dyn_dlpf_min_hz = 100,
-    .dyn_dlpf_idle = 20,
+    .dyn_gyro_lpf_max_hz = 350,
+    .dyn_gyro_lpf_min_hz = 100,
+    .dyn_gyro_lpf_idle = 20,
+    .dyn_dterm_lpf_max_hz = 250,
+    .dyn_dterm_lpf_min_hz = 100,
+    .dyn_dterm_lpf_idle = 20,
 );
 
 #ifdef USE_MULTI_GYRO
@@ -1112,9 +1112,9 @@ void gyroUpdatelpf(float throttle)
 {
     if (gyroConfig()->dyn_gyro_lpf_enable) {
         const float dynthrottle = (throttle - (throttle * throttle * throttle) / 3) * 1.5;
-        const uint16_t max = gyroConfig()->dyn_glpf_max_hz;
-        const uint16_t min = gyroConfig()->dyn_glpf_min_hz;
-        const float idle = gyroConfig()->dyn_glpf_idle / 100;
+        const uint16_t max = gyroConfig()->dyn_gyro_lpf_max_hz;
+        const uint16_t min = gyroConfig()->dyn_gyro_lpf_min_hz;
+        const float idle = gyroConfig()->dyn_gyro_lpf_idle / 100;
         const float idlePoint = (idle - (idle * idle * idle) / 3) * 1.5;
         const float invIdlePoint = 1 / (1 - idle);
         const uint16_t diff = max - min;
