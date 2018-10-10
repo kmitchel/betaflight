@@ -1111,12 +1111,12 @@ uint8_t gyroReadRegister(uint8_t whichSensor, uint8_t reg)
 void gyroUpdatelpf(float throttle)
 {
     if (gyroConfig()->dyn_gyro_lpf_enable) {
-        const float dynthrottle = (throttle - (throttle * throttle * throttle) / 3) * 1.5;
+        const float dynthrottle = (throttle - (throttle * throttle * throttle) / 3) * 1.5f;
         const uint16_t max = gyroConfig()->dyn_gyro_lpf_max_hz;
         const uint16_t min = gyroConfig()->dyn_gyro_lpf_min_hz;
         const float idle = gyroConfig()->dyn_gyro_lpf_idle / 100.0f;
-        const float idlePoint = (idle - (idle * idle * idle) / 3) * 1.5;
-        const float invIdlePoint = 1 / (1 - idle);
+        const float idlePoint = (idle - (idle * idle * idle) / 3) * 1.5f;
+        const float invIdlePoint = 1 / (1 - idlePoint);
         const uint16_t diff = max - min;
         uint16_t cutoffFreq = min;
 
