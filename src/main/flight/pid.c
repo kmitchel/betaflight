@@ -1155,7 +1155,7 @@ void dTermUpdatelpf(float throttle)
         const float dynthrottle = (throttle - (throttle * throttle * throttle) / 3) * 1.5f;
         const uint16_t max = gyroConfig()->dyn_dterm_lpf_max_hz;
         const uint16_t min = gyroConfig()->dyn_dterm_lpf_min_hz;
-        const float idle = gyroConfig()->dyn_dterm_lpf_idle / 100;
+        const float idle = gyroConfig()->dyn_dterm_lpf_idle / 100.0f;
         const float idlePoint = (idle - (idle * idle * idle) / 3) * 1.5f;
         const float invIdlePoint = 1 / (1 - idlePoint);
         const uint16_t diff = max - min;
@@ -1166,8 +1166,8 @@ void dTermUpdatelpf(float throttle)
          }
 
         if (isDlpf) {
+            const float gyroDt = gyro.targetLooptime * 1e-6f;
             for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-                const float gyroDt = gyro.targetLooptime * 1e-6f;
                 pt1FilterUpdateCutoff(&dtermLowpass[axis].pt1Filter, pt1FilterGain(cutoffFreq, gyroDt));
             }
         } else if (isDlpfBi) {

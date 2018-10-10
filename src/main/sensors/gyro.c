@@ -1127,8 +1127,8 @@ void gyroUpdatelpf(float throttle)
         DEBUG_SET(DEBUG_FFT_FREQ, 1, cutoffFreq);
 
         if (isGlpf) {
+            const float gyroDt = gyro.targetLooptime * 1e-6f;
             for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-                const float gyroDt = gyro.targetLooptime * 1e-6f;
                 pt1FilterUpdateCutoff(&gyroSensor1.lowpassFilter[axis].pt1FilterState, pt1FilterGain(cutoffFreq, gyroDt));
             }
         } else if (isBiGlpf) {
