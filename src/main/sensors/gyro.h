@@ -50,7 +50,8 @@ enum {
 enum {
     DYN_FILTER_RANGE_HIGH = 0,
     DYN_FILTER_RANGE_MEDIUM,
-    DYN_FILTER_RANGE_LOW
+    DYN_FILTER_RANGE_LOW,
+    DYN_FILTER_RANGE_AUTO
 } ;
 
 enum {
@@ -98,11 +99,13 @@ typedef struct gyroConfig_s {
 
     uint16_t gyroCalibrationDuration;  // Gyro calibration duration in 1/100 second
     
-    uint8_t dyn_filter_width_percent;
+    uint8_t  dyn_filter_width_hz;
+    uint16_t dyn_filter_q;
     uint8_t dyn_fft_location; // before or after static filters
     uint8_t dyn_filter_range; // ignore any FFT bin below this threshold
+    uint16_t dyn_lpf_gyro_min_hz;
     uint16_t dyn_lpf_gyro_max_hz;
-    uint8_t  dyn_lpf_gyro_idle;
+
 } gyroConfig_t;
 
 PG_DECLARE(gyroConfig_t, gyroConfig);
