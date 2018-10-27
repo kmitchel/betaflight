@@ -50,8 +50,13 @@ enum {
 enum {
     DYN_FILTER_RANGE_HIGH = 0,
     DYN_FILTER_RANGE_MEDIUM,
-    DYN_FILTER_RANGE_LOW
+    DYN_FILTER_RANGE_LOW,
+    DYN_FILTER_RANGE_AUTO
 } ;
+
+#define DYN_FILTER_RANGE_HZ_HIGH 2000
+#define DYN_FILTER_RANGE_HZ_MEDIUM 1333
+#define DYN_FILTER_RANGE_HZ_LOW 1000
 
 enum {
     DYN_LPF_NONE = 0,
@@ -98,11 +103,10 @@ typedef struct gyroConfig_s {
 
     uint16_t gyroCalibrationDuration;  // Gyro calibration duration in 1/100 second
     
-    uint8_t dyn_filter_width_percent;
-    uint8_t dyn_fft_location; // before or after static filters
     uint8_t dyn_filter_range; // ignore any FFT bin below this threshold
     uint16_t dyn_lpf_gyro_max_hz;
-    uint8_t  dyn_lpf_gyro_idle;
+    uint8_t  dyn_filter_width_hz;
+    uint16_t dyn_filter_q;
 } gyroConfig_t;
 
 PG_DECLARE(gyroConfig_t, gyroConfig);
@@ -126,5 +130,6 @@ bool gyroYawSpinDetected(void);
 uint16_t gyroAbsRateDps(int axis);
 uint8_t gyroReadRegister(uint8_t whichSensor, uint8_t reg);
 #ifdef USE_DYN_LPF
+float dynThrottle(float throttle);
 void dynLpfGyroUpdate(float throttle);
 #endif
