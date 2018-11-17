@@ -565,7 +565,7 @@ const clivalue_t valueTable[] = {
 #endif
 #if defined(USE_GYRO_DATA_ANALYSE)
     { "dyn_filter_range",           VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_DYNAMIC_FILTER_RANGE }, PG_GYRO_CONFIG, offsetof(gyroConfig_t, dyn_filter_range) },
-    { "dyn_filter_width_hz",        VAR_UINT8  | MASTER_VALUE, .config.minmax = { 15, 150 }, PG_GYRO_CONFIG, offsetof(gyroConfig_t, dyn_filter_width_hz) },
+    { "dyn_filter_width_hz",        VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 150 }, PG_GYRO_CONFIG, offsetof(gyroConfig_t, dyn_filter_width_hz) },
     { "dyn_filter_q",               VAR_UINT16  | MASTER_VALUE, .config.minmax = { 1, 1000 }, PG_GYRO_CONFIG, offsetof(gyroConfig_t, dyn_filter_q) },
 #endif
 #ifdef USE_DYN_LPF
