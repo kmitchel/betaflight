@@ -63,6 +63,7 @@ static float FAST_RAM_ZERO_INIT      dynNotchQ;
 static float FAST_RAM_ZERO_INIT      dynNotch1Ctr;
 static float FAST_RAM_ZERO_INIT      dynNotch2Ctr;
 static uint16_t FAST_RAM_ZERO_INIT   dynNotchMinHz;
+static bool FAST_RAM dualNotch = true;
 
 // Hanning window, see https://en.wikipedia.org/wiki/Window_function#Hann_.28Hanning.29_window
 static FAST_RAM_ZERO_INIT float hanningWindow[FFT_WINDOW_SIZE];
@@ -84,6 +85,10 @@ void gyroDataAnalyseInit(uint32_t targetLooptimeUs)
     dynNotch2Ctr = 1 + gyroConfig()->dyn_notch_width_percent / 100.0f;
     dynNotchQ = gyroConfig()->dyn_notch_q / 100.0f;
     dynNotchMinHz = gyroConfig()->dyn_notch_min_hz;
+
+    if (gyroConfig()->dyn_notch_width_percent == 0) {
+        dualNotch = false;
+    }
 
     if (dynamicFilterRange == DYN_NOTCH_RANGE_AUTO) {
         if (gyroConfig()->dyn_lpf_gyro_max_hz > 333) {
@@ -335,8 +340,12 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
             // 7us
             // calculate cutoffFreq and notch Q, update notch filter  =1.8+((A2-150)*0.004)
             if (state->prevCenterFreq[state->updateAxis] != state->centerFreq[state->updateAxis]) {
+                if (dualNotch) {
                     biquadFilterUpdate(&notchFilterDyn[state->updateAxis], state->centerFreq[state->updateAxis] * dynNotch1Ctr, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
                     biquadFilterUpdate(&notchFilterDyn2[state->updateAxis], state->centerFreq[state->updateAxis] * dynNotch2Ctr, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
+                } else {
+                    biquadFilterUpdate(&notchFilterDyn[state->updateAxis], state->centerFreq[state->updateAxis], gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
+                }
             }
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);
 
