@@ -41,6 +41,8 @@
 #include "sensors/gyro.h"
 #include "sensors/gyroanalyse.h"
 
+#include "fc/core.h"
+
 // The FFT splits the frequency domain into an number of bins
 // A sampling frequency of 1000 and max frequency of 500 at a window size of 32 gives 16 frequency bins each 31.25Hz wide
 // Eg [0,31), [31,62), [62, 93) etc
@@ -64,6 +66,7 @@ static float FAST_RAM_ZERO_INIT      dynNotch1Ctr;
 static float FAST_RAM_ZERO_INIT      dynNotch2Ctr;
 static uint16_t FAST_RAM_ZERO_INIT   dynNotchMinHz;
 static bool FAST_RAM dualNotch = true;
+static uint16_t FAST_RAM_ZERO_INIT dynNotchMaxFFT;
 
 // Hanning window, see https://en.wikipedia.org/wiki/Window_function#Hann_.28Hanning.29_window
 static FAST_RAM_ZERO_INIT float hanningWindow[FFT_WINDOW_SIZE];
@@ -327,6 +330,9 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
                 DEBUG_SET(DEBUG_FFT, 3, lrintf(fftMeanIndex * 100));
                 DEBUG_SET(DEBUG_FFT_FREQ, 0, state->centerFreq[state->updateAxis]);
                 DEBUG_SET(DEBUG_DYN_LPF, 1, state->centerFreq[state->updateAxis]);
+                if(calculateThrottlePercentAbs() > 90) {
+                    dynNotchMaxFFT = MAX(dynNotchMaxFFT, state->centerFreq[state->updateAxis]);
+                }
             }
             if (state->updateAxis == 1) {
                 DEBUG_SET(DEBUG_FFT_FREQ, 1, state->centerFreq[state->updateAxis]);
@@ -371,4 +377,8 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
     state->updateStep = (state->updateStep + 1) % STEP_COUNT;
 }
 
+
+uint16_t getMaxFFT(void) {
+    return (dynNotchMaxFFT);
+}
 #endif // USE_GYRO_DATA_ANALYSE

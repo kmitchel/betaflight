@@ -95,6 +95,7 @@
 #include "sensors/battery.h"
 #include "sensors/esc_sensor.h"
 #include "sensors/sensors.h"
+#include "sensors/gyroanalyse.h"
 
 #ifdef USE_HARDWARE_REVISION_DETECTION
 #include "hardware_revision.h"
@@ -146,6 +147,7 @@ typedef struct statistic_s {
     int16_t max_esc_temp;
     int32_t max_esc_rpm;
     uint8_t min_link_quality;
+    uint16_t max_fft;
 } statistic_t;
 
 typedef struct radioControls_s {
@@ -1565,6 +1567,7 @@ static void osdResetStats(void)
     stats.max_esc_temp = 0;
     stats.max_esc_rpm  = 0;
     stats.min_link_quality = 99; // percent
+    stats.max_fft      = 0;
 }
 
 static void osdUpdateStats(void)
@@ -1634,6 +1637,11 @@ static void osdUpdateStats(void)
         if (stats.max_esc_rpm < value) {
             stats.max_esc_rpm = value;
         }
+    }
+#endif
+#ifdef USE_GYRO_DATA_ANALYSE
+    if (featureIsEnabled(FEATURE_DYNAMIC_FILTER)) {
+        stats.max_fft = MAX(stats.max_fft, getMaxFFT());
     }
 #endif
 }
@@ -1826,6 +1834,14 @@ static void osdShowStats(uint16_t endBatteryVoltage)
         const uint32_t distanceFlown = GPS_distanceFlownInCm / 100;
         tfp_sprintf(buff, "%d%c", osdGetMetersToSelectedUnit(distanceFlown), osdGetMetersToSelectedUnitSymbol());
         osdDisplayStatisticLabel(top++, "FLIGHT DISTANCE", buff);
+    }
+#endif
+
+#ifdef USE_GYRO_DATA_ANALYSE
+    if (osdStatGetState(OSD_STAT_MAX_FFT) && featureIsEnabled(FEATURE_DYNAMIC_FILTER)) { 
+        itoa(stats.max_fft, buff, 10);
+        strcat(buff, "HZ");
+        osdDisplayStatisticLabel(top++, "MAX ROLL FFT", buff);
     }
 #endif
 
