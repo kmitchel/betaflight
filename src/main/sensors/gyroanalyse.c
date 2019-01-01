@@ -43,6 +43,11 @@
 
 #include "fc/core.h"
 
+#include "io/serial.h"
+#include "common/printf.h"
+#include "common/typeconversion.h"
+
+
 // The FFT splits the frequency domain into an number of bins
 // A sampling frequency of 1000 and max frequency of 500 at a window size of 32 gives 16 frequency bins each 31.25Hz wide
 // Eg [0,31), [31,62), [62, 93) etc
@@ -73,8 +78,20 @@ static uint16_t FAST_RAM_ZERO_INIT dynNotchMaxFFT;
 // Hanning window, see https://en.wikipedia.org/wiki/Window_function#Hann_.28Hanning.29_window
 static FAST_RAM_ZERO_INIT float hanningWindow[FFT_WINDOW_SIZE];
 
+serialPort_t *debugSerialPort = NULL;
+char buf0[FTOA_BUFFER_LENGTH];
+
+
 void gyroDataAnalyseInit(uint32_t targetLooptimeUs)
 {
+
+    debugSerialPort = openSerialPort(SERIAL_PORT_USART1, FUNCTION_NONE, NULL, NULL, 115200, MODE_RXTX, 0);
+    if (debugSerialPort) {
+        setPrintfSerialPort(debugSerialPort);
+        tfp_printf("Debug FFT Ready\r\n");
+    }
+
+
 #ifdef USE_DUAL_GYRO
     static bool gyroAnalyseInitialized;
     if (gyroAnalyseInitialized) {
@@ -271,6 +288,20 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
         }
         case STEP_CALC_FREQUENCIES:
         {
+
+            // if (state->updateAxis == 1){
+            //     for (int i = 0; i < FFT_BIN_COUNT; i++) {
+            //         ftoa(state->fftData[i], buf0);
+            //         tfp_printf(buf0);
+            //         if (i == FFT_BIN_COUNT -1) {
+            //             tfp_printf(";\r\n");
+            //         } else {
+            //             tfp_printf(", ");
+
+            //         }
+            //     }
+            // }
+
             bool fftIncreased = false;
             float dataMax = 0;
             uint8_t binStart = 0;
@@ -316,6 +347,9 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
             float centerFreq = dynNotchMaxCtrHz;
             float fftMeanIndex = 0;
              // idx was shifted by 1 to start at 1, not 0
+            ftoa(fftSum, buf0);
+            tfp_printf(buf0);
+            tfp_printf("\r\n");
             if (fftSum > 0) {
                 fftMeanIndex = (fftWeightedSum / fftSum) - 1;
                 // the index points at the center frequency of each bin so index 0 is actually 16.125Hz
