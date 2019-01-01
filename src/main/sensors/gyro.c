@@ -194,8 +194,14 @@ void pgResetFn_gyroConfig(gyroConfig_t *gyroConfig)
     gyroConfig->dyn_notch_range = DYN_NOTCH_RANGE_MEDIUM;
     gyroConfig->dyn_notch_width_percent = 8;
     gyroConfig->dyn_notch_q = 120;
-    gyroConfig->dyn_notch_min_hz = 150;
+    gyroConfig->dyn_notch_min_hz = 120;
+#ifdef USE_DYN_LPF
+    gyroConfig->gyro_lowpass_hz = 150;
+    gyroConfig->gyro_lowpass_type = FILTER_BIQUAD;
+    gyroConfig->gyro_lowpass2_hz = 0;
+#endif
     gyroConfig->gyro_filter_debug_axis = FD_ROLL;
+    gyroConfig->dyn_notch_lpf_hz = 10;
 }
 
 #ifdef USE_MULTI_GYRO
@@ -1248,13 +1254,13 @@ void dynLpfGyroUpdate(float throttle)
         const unsigned int cutoffFreq = fmax(dynThrottle(throttle) * dynLpfMax, dynLpfMin);
 
         if (dynLpfFilter == DYN_LPF_PT1) {
-            DEBUG_SET(DEBUG_DYN_LPF, 2, cutoffFreq);
+//            DEBUG_SET(DEBUG_DYN_LPF, 2, cutoffFreq);
             const float gyroDt = gyro.targetLooptime * 1e-6f;
             for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
                 pt1FilterUpdateCutoff(&gyro.lowpassFilter[axis].pt1FilterState, pt1FilterGain(cutoffFreq, gyroDt));
             }
         } else if (dynLpfFilter == DYN_LPF_BIQUAD) {
-            DEBUG_SET(DEBUG_DYN_LPF, 2, cutoffFreq);
+//            DEBUG_SET(DEBUG_DYN_LPF, 2, cutoffFreq);
             for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
                 biquadFilterUpdateLPF(&gyro.lowpassFilter[axis].biquadFilterState, cutoffFreq, gyro.targetLooptime);
             }

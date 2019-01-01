@@ -273,6 +273,9 @@ static FAST_RAM_ZERO_INIT filterApplyFnPtr dtermLowpassApplyFn;
 static FAST_RAM_ZERO_INIT dtermLowpass_t dtermLowpass[XYZ_AXIS_COUNT];
 static FAST_RAM_ZERO_INIT filterApplyFnPtr dtermLowpass2ApplyFn;
 static FAST_RAM_ZERO_INIT dtermLowpass_t dtermLowpass2[XYZ_AXIS_COUNT];
+static FAST_RAM_ZERO_INIT filterApplyFnPtr dtermLowpass3ApplyFn;
+static FAST_RAM_ZERO_INIT pt1Filter_t dtermLowpass3[XYZ_AXIS_COUNT];
+
 static FAST_RAM_ZERO_INIT filterApplyFnPtr ptermYawLowpassApplyFn;
 static FAST_RAM_ZERO_INIT pt1Filter_t ptermYawLowpass;
 
@@ -343,6 +346,8 @@ void pidInitFilters(const pidProfile_t *pidProfile)
         // no looptime set, so set all the filters to null
         dtermNotchApplyFn = nullFilterApply;
         dtermLowpassApplyFn = nullFilterApply;
+        dtermLowpass2ApplyFn = nullFilterApply;
+        dtermLowpass3ApplyFn = nullFilterApply;
         ptermYawLowpassApplyFn = nullFilterApply;
         return;
     }
@@ -383,8 +388,17 @@ void pidInitFilters(const pidProfile_t *pidProfile)
         switch (pidProfile->dterm_filter_type) {
         case FILTER_PT1:
             dtermLowpassApplyFn = (filterApplyFnPtr)pt1FilterApply;
+            dtermLowpass3ApplyFn = nullFilterApply;
             for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
                 pt1FilterInit(&dtermLowpass[axis].pt1Filter, pt1FilterGain(dterm_lowpass_hz, dT));
+            }
+            break;
+        case FILTER_DUAL_PT1:
+            dtermLowpassApplyFn = (filterApplyFnPtr)pt1FilterApply;
+            dtermLowpass3ApplyFn = (filterApplyFnPtr)pt1FilterApply;
+            for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
+                pt1FilterInit(&dtermLowpass[axis].pt1Filter, pt1FilterGain(dterm_lowpass_hz * DUAL_PT1_FREQ, dT));
+                pt1FilterInit(&dtermLowpass3[axis], pt1FilterGain(dterm_lowpass_hz * DUAL_PT1_FREQ, dT));
             }
             break;
         case FILTER_BIQUAD:
@@ -393,16 +407,19 @@ void pidInitFilters(const pidProfile_t *pidProfile)
 #else
             dtermLowpassApplyFn = (filterApplyFnPtr)biquadFilterApply;
 #endif
+            dtermLowpass3ApplyFn = nullFilterApply;
             for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
                 biquadFilterInitLPF(&dtermLowpass[axis].biquadFilter, dterm_lowpass_hz, targetPidLooptime);
             }
             break;
         default:
             dtermLowpassApplyFn = nullFilterApply;
+            dtermLowpass3ApplyFn = nullFilterApply;
             break;
         }
     } else {
         dtermLowpassApplyFn = nullFilterApply;
+        dtermLowpass3ApplyFn = nullFilterApply;
     }
 
     //2nd Dterm Lowpass Filter
@@ -690,6 +707,9 @@ void pidInitConfig(const pidProfile_t *pidProfile)
         switch (pidProfile->dterm_filter_type) {
         case FILTER_PT1:
             dynLpfFilter = DYN_LPF_PT1;
+            break;
+        case FILTER_DUAL_PT1:
+            dynLpfFilter = DYN_LPF_DUAL_PT1;
             break;
         case FILTER_BIQUAD:
             dynLpfFilter = DYN_LPF_BIQUAD;
@@ -1249,7 +1269,7 @@ static float applyLaunchControl(int axis, const rollAndPitchTrims_t *angleTrim)
 
 // Betaflight pid controller, which will be maintained in the future with additional features specialised for current (mini) multirotor usage.
 // Based on 2DOF reference design (matlab)
-void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTimeUs)
+void FAST_CODE_NOINLINE pidController(const pidProfile_t *pidProfile, timeUs_t currentTimeUs)
 {
     static float previousGyroRateDterm[XYZ_AXIS_COUNT];
 #ifdef USE_INTERPOLATED_SP
@@ -1322,6 +1342,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
         gyroRateDterm[axis] = dtermNotchApplyFn((filter_t *) &dtermNotch[axis], gyroRateDterm[axis]);
         gyroRateDterm[axis] = dtermLowpassApplyFn((filter_t *) &dtermLowpass[axis], gyroRateDterm[axis]);
         gyroRateDterm[axis] = dtermLowpass2ApplyFn((filter_t *) &dtermLowpass2[axis], gyroRateDterm[axis]);
+        gyroRateDterm[axis] = dtermLowpass3ApplyFn((filter_t *) &dtermLowpass[axis], gyroRateDterm[axis]);
     }
 
     rotateItermAndAxisError();
@@ -1599,15 +1620,23 @@ void dynLpfDTermUpdate(float throttle)
 {
     if (dynLpfFilter != DYN_LPF_NONE) {
         const unsigned int cutoffFreq = fmax(dynThrottle(throttle) * dynLpfMax, dynLpfMin);
-
-         if (dynLpfFilter == DYN_LPF_PT1) {
-            for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-                pt1FilterUpdateCutoff(&dtermLowpass[axis].pt1Filter, pt1FilterGain(cutoffFreq, dT));
-            }
-        } else if (dynLpfFilter == DYN_LPF_BIQUAD) {
-            for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-                biquadFilterUpdateLPF(&dtermLowpass[axis].biquadFilter, cutoffFreq, targetPidLooptime);
-            }
+        switch(dynLpfFilter){
+            case DYN_LPF_PT1:
+                for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                    pt1FilterUpdateCutoff(&dtermLowpass[axis].pt1Filter, pt1FilterGain(cutoffFreq, dT));
+                }
+                break;
+            case DYN_LPF_DUAL_PT1:
+                for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                    pt1FilterUpdateCutoff(&dtermLowpass[axis].pt1Filter, pt1FilterGain(cutoffFreq * DUAL_PT1_FREQ, dT));
+                    pt1FilterUpdateCutoff(&dtermLowpass3[axis], pt1FilterGain(cutoffFreq * DUAL_PT1_FREQ, dT));
+                }
+                break;
+            case DYN_LPF_BIQUAD:
+                for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                    biquadFilterUpdateLPF(&dtermLowpass[axis].biquadFilter, cutoffFreq, targetPidLooptime);
+                }
+                break;
         }
     }
 }

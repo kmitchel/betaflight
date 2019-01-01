@@ -96,7 +96,8 @@ enum {
 enum {
     DYN_LPF_NONE = 0,
     DYN_LPF_PT1,
-    DYN_LPF_BIQUAD
+    DYN_LPF_BIQUAD,
+    DYN_LPF_DUAL_PT1
 };
 
 #define GYRO_CONFIG_USE_GYRO_1      0
@@ -152,6 +153,7 @@ typedef struct gyroConfig_s {
     uint16_t dyn_notch_q;
     uint16_t dyn_notch_min_hz;
     uint8_t  gyro_filter_debug_axis;
+    uint8_t  dyn_notch_lpf_hz;	
 } gyroConfig_t;
 
 PG_DECLARE(gyroConfig_t, gyroConfig);

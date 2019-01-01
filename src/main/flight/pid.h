@@ -48,6 +48,8 @@
 #define ITERM_RELAX_SETPOINT_THRESHOLD 40.0f
 #define ITERM_RELAX_CUTOFF_DEFAULT 20
 
+#define DUAL_PT1_FREQ 1.5625f
+
 typedef enum {
     PID_ROLL,
     PID_PITCH,
