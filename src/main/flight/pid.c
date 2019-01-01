@@ -273,6 +273,7 @@ static FAST_RAM_ZERO_INIT filterApplyFnPtr dtermLowpassApplyFn;
 static FAST_RAM_ZERO_INIT dtermLowpass_t dtermLowpass[XYZ_AXIS_COUNT];
 static FAST_RAM_ZERO_INIT filterApplyFnPtr dtermLowpass2ApplyFn;
 static FAST_RAM_ZERO_INIT dtermLowpass_t dtermLowpass2[XYZ_AXIS_COUNT];
+
 static FAST_RAM_ZERO_INIT filterApplyFnPtr ptermYawLowpassApplyFn;
 static FAST_RAM_ZERO_INIT pt1Filter_t ptermYawLowpass;
 
@@ -343,6 +344,7 @@ void pidInitFilters(const pidProfile_t *pidProfile)
         // no looptime set, so set all the filters to null
         dtermNotchApplyFn = nullFilterApply;
         dtermLowpassApplyFn = nullFilterApply;
+        dtermLowpass2ApplyFn = nullFilterApply;
         ptermYawLowpassApplyFn = nullFilterApply;
         return;
     }
@@ -1249,7 +1251,13 @@ static float applyLaunchControl(int axis, const rollAndPitchTrims_t *angleTrim)
 
 // Betaflight pid controller, which will be maintained in the future with additional features specialised for current (mini) multirotor usage.
 // Based on 2DOF reference design (matlab)
+
+
+#ifdef STM32F7
+void FAST_CODE FAST_CODE_NOINLINE pidController(const pidProfile_t *pidProfile, timeUs_t currentTimeUs)
+#else
 void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTimeUs)
+#endif
 {
     static float previousGyroRateDterm[XYZ_AXIS_COUNT];
 #ifdef USE_INTERPOLATED_SP
@@ -1317,7 +1325,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
     for (int axis = FD_ROLL; axis <= FD_YAW; ++axis) {
         gyroRateDterm[axis] = gyro.gyroADCf[axis];
 #ifdef USE_RPM_FILTER
-        gyroRateDterm[axis] = rpmFilterDterm(axis,gyroRateDterm[axis]);
+//        gyroRateDterm[axis] = rpmFilterDterm(axis,gyroRateDterm[axis]);
 #endif
         gyroRateDterm[axis] = dtermNotchApplyFn((filter_t *) &dtermNotch[axis], gyroRateDterm[axis]);
         gyroRateDterm[axis] = dtermLowpassApplyFn((filter_t *) &dtermLowpass[axis], gyroRateDterm[axis]);
@@ -1599,15 +1607,17 @@ void dynLpfDTermUpdate(float throttle)
 {
     if (dynLpfFilter != DYN_LPF_NONE) {
         const unsigned int cutoffFreq = fmax(dynThrottle(throttle) * dynLpfMax, dynLpfMin);
-
-         if (dynLpfFilter == DYN_LPF_PT1) {
-            for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-                pt1FilterUpdateCutoff(&dtermLowpass[axis].pt1Filter, pt1FilterGain(cutoffFreq, dT));
-            }
-        } else if (dynLpfFilter == DYN_LPF_BIQUAD) {
-            for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-                biquadFilterUpdateLPF(&dtermLowpass[axis].biquadFilter, cutoffFreq, targetPidLooptime);
-            }
+        switch(dynLpfFilter){
+            case DYN_LPF_PT1:
+                for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                    pt1FilterUpdateCutoff(&dtermLowpass[axis].pt1Filter, pt1FilterGain(cutoffFreq, dT));
+                }
+                break;
+            case DYN_LPF_BIQUAD:
+                for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+                    biquadFilterUpdateLPF(&dtermLowpass[axis].biquadFilter, cutoffFreq, targetPidLooptime);
+                }
+                break;
         }
     }
 }
