@@ -116,7 +116,7 @@ void gyroDataAnalyseInit(uint32_t targetLooptimeUs)
     // otherwise we need to calculate a FFT sample frequency to ensure we get 3 samples (gyro loops < 4K)
     const int gyroLoopRateHz = lrintf((1.0f / targetLooptimeUs) * 1e6f);
     
-    fftSamplingRateHz = MIN((gyroLoopRateHz / 3), fftSamplingRateHz);
+    fftSamplingRateHz = gyroLoopRateHz / MAX(1, gyroLoopRateHz / fftSamplingRateHz);
 
     fftResolution = (float)fftSamplingRateHz / FFT_WINDOW_SIZE;
 
