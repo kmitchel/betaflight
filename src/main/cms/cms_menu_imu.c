@@ -21,6 +21,7 @@
 // Menu contents for PID, RATES, RC preview, misc
 // Should be part of the relevant .c file.
 
+#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -714,6 +715,8 @@ static const OSD_Entry cmsx_menuImuEntries[] =
 
     {"PID PROF",  OME_UINT8,   cmsx_profileIndexOnChange,     &(OSD_UINT8_t){ &tmpPidProfileIndex, 1, PID_PROFILE_COUNT, 1},    0},
     {"PID",       OME_Submenu, cmsMenuChange,                 &cmsx_menuPid,                                                 0},
+// Left as a place holder, in case QT on main menu rejected.
+//    {"QUICK TUNE", OME_Submenu, cmsMenuChange,                 &cmsx_menuQT,                                                 0},
     {"MISC PP",   OME_Submenu, cmsMenuChange,                 &cmsx_menuProfileOther,                                        0},
     {"FILT PP",   OME_Submenu, cmsMenuChange,                 &cmsx_menuFilterPerProfile,                                    0},
 
@@ -743,4 +746,68 @@ CMS_Menu cmsx_menuImu = {
     .entries = cmsx_menuImuEntries,
 };
 
-#endif // CMS
+//
+// Quick Tune
+//
+
+static long cmsx_QTOnEnter(void)
+{
+    pidProfileIndexString[1] = '0' + tmpPidProfileIndex;
+
+    const pidProfile_t *pidProfile = pidProfiles(pidProfileIndex);
+    for (uint8_t i = 0; i < 3; i++) {
+        tempPid[i][0] = pidProfile->pid[i].P;
+        tempPid[i][1] = pidProfile->pid[i].I;
+        tempPid[i][2] = pidProfile->pid[i].D;
+        tempPidF[i] = pidProfile->pid[i].F;
+#ifdef USE_D_MIN
+        cmsx_d_min[i]  = pidProfile->d_min[i];
+#endif
+    }
+
+    return 0;
+}
+
+static long cmsx_QTOnExit(const OSD_Entry *self)
+{
+    UNUSED(self);
+
+    pidProfile_t *pidProfile = currentPidProfile;
+    for (uint8_t i = 0; i < 3; i++) {
+        float ratio = tempPid[i][0] / (float)pidProfile->pid[i].P;
+        pidProfile->pid[i].P = tempPid[i][0];
+        pidProfile->pid[i].I = lrintf(tempPid[i][1] * ratio);
+        pidProfile->pid[i].D = lrintf(tempPid[i][2] * ratio);
+        pidProfile->pid[i].F = lrintf(tempPidF[i] * ratio);
+#ifdef USE_D_MIN
+        pidProfile->d_min[i] = lrintf(cmsx_d_min[i] * ratio);
+#endif
+    }
+    pidInitConfig(currentPidProfile);
+
+    return 0;
+}
+
+static const OSD_Entry cmsx_menuQTEntries[] =
+{
+    { "-- QUICK TUNE --", OME_Label, NULL, pidProfileIndexString, 0},
+
+    { "ROLL  P", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_ROLL][0],  0, 200, 1 }, 0 },
+
+    { "PITCH P", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_PITCH][0], 0, 200, 1 }, 0 },
+
+    { "BACK", OME_Back, NULL, NULL, 0 },
+    { NULL, OME_END, NULL, NULL, 0 }
+};
+
+CMS_Menu cmsx_menuQT = {
+#ifdef CMS_MENU_DEBUG
+    .GUARD_text = "XQT",
+    .GUARD_type = OME_MENU,
+#endif
+    .onEnter = cmsx_QTOnEnter,
+    .onExit = cmsx_QTOnExit,
+    .entries = cmsx_menuQTEntries
+};
+
+#endif // USE_EXTENDED_CMS_MENUS

@@ -145,6 +145,7 @@ static const OSD_Entry menuMainEntries[] =
 {
     {"-- MAIN --",  OME_Label, NULL, NULL, 0},
 
+    {"QUICK TUNE",  OME_Submenu,  cmsMenuChange, &cmsx_menuQT,  0},
     {"PROFILE",     OME_Submenu,  cmsMenuChange, &cmsx_menuImu, 0},
     {"FEATURES",    OME_Submenu,  cmsMenuChange, &menuFeatures, 0},
 #ifdef USE_OSD
