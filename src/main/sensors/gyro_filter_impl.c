@@ -20,6 +20,8 @@
 
 #include "platform.h"
 
+static float lastGyro[XYZ_AXIS_COUNT];
+
 static FAST_CODE void GYRO_FILTER_FUNCTION_NAME(void)
 {
     for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
@@ -63,9 +65,11 @@ static FAST_CODE void GYRO_FILTER_FUNCTION_NAME(void)
         }
 #endif
 
+        gyro.gyroADCf[axis] = gyroADCf + gyroADCf - lastGyro[axis];
+        lastGyro[axis] = gyroADCf;
+
         // DEBUG_GYRO_FILTERED records the scaled, filtered, after all software filtering has been applied.
         GYRO_FILTER_DEBUG_SET(DEBUG_GYRO_FILTERED, axis, lrintf(gyroADCf));
 
-        gyro.gyroADCf[axis] = gyroADCf;
     }
 }
