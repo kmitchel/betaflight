@@ -72,14 +72,6 @@ static FAST_RAM_ZERO_INIT float hanningWindow[FFT_WINDOW_SIZE];
 
 void gyroDataAnalyseInit()
 {
-#ifdef USE_MULTI_GYRO
-    static bool gyroAnalyseInitialized;
-    if (gyroAnalyseInitialized) {
-        return;
-    }
-    gyroAnalyseInitialized = true;
-#endif
-
     dynNotchRange     = gyroConfig()->dyn_notch_range;
     fftSamplingRateHz = DYN_NOTCH_RANGE_HZ_LOW;
     dynNotchMinHz     = gyroConfig()->dyn_notch_min_hz;
