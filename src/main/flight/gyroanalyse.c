@@ -296,6 +296,8 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state)
                 dynNotchMaxFFT = MAX(dynNotchMaxFFT, peakFreq);
             }
 
+            static int updatedNotch = 0;
+
             //Constrain center frequencies.
             centerFreq = constrain(centerFreq, dynNotchMinHz, dynNotchMaxCtrHz);
 
@@ -311,6 +313,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state)
                             state->updateCenterFreq[a][state->updateAxis] = true;
                             state->centerFreq[a][state->updateAxis] = centerFreq;
                             state->centerPeak[a][state->updateAxis] = state->fftData[k];
+                            updatedNotch = a;
                         }
                         updated = true;
                         break;
@@ -327,6 +330,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state)
                         state->centerPeak[2][state->updateAxis] = state->centerPeak[1][state->updateAxis];
                         state->centerFreq[1][state->updateAxis] = state->centerFreq[0][state->updateAxis];
                         state->centerPeak[1][state->updateAxis] = state->centerPeak[0][state->updateAxis];
+                        updatedNotch = 0;
                         state->updateCenterFreq[0][state->updateAxis] = true;
                         state->centerFreq[0][state->updateAxis] = centerFreq;
                         state->centerPeak[0][state->updateAxis] = state->fftData[k];
@@ -337,6 +341,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state)
                         state->centerPeak[3][state->updateAxis] = state->centerPeak[2][state->updateAxis];
                         state->centerFreq[2][state->updateAxis] = state->centerFreq[1][state->updateAxis];
                         state->centerPeak[2][state->updateAxis] = state->centerPeak[1][state->updateAxis];
+                        updatedNotch = 1;
                         state->updateCenterFreq[1][state->updateAxis] = true;
                         state->centerFreq[1][state->updateAxis] = centerFreq;
                         state->centerPeak[1][state->updateAxis] = state->fftData[k];
@@ -345,12 +350,14 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state)
                     {
                         state->centerFreq[3][state->updateAxis] = state->centerFreq[2][state->updateAxis];
                         state->centerPeak[3][state->updateAxis] = state->centerPeak[2][state->updateAxis];
+                        updatedNotch = 2;
                         state->updateCenterFreq[2][state->updateAxis] = true;
                         state->centerFreq[2][state->updateAxis] = centerFreq;
                         state->centerPeak[2][state->updateAxis] = state->fftData[k];
                     }
                     else if (lrintf(state->fftData[k] * state->fftData[k]) > lrintf(state->centerPeak[3][state->updateAxis] * state->centerPeak[3][state->updateAxis]))
                     {
+                        updatedNotch = 3;
                         state->updateCenterFreq[3][state->updateAxis] = true;
                         state->centerFreq[3][state->updateAxis] = centerFreq;
                         state->centerPeak[3][state->updateAxis] = state->fftData[k];
@@ -360,7 +367,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state)
 
             if (state->updateAxis == gyroDebugAxis) {
                 DEBUG_SET(DEBUG_FFT, 3, lrintf(calculateWeight(state, k) * 100));
-                DEBUG_SET(DEBUG_FFT_FREQ, 0, state->centerFreq[0][state->updateAxis]);
+                DEBUG_SET(DEBUG_FFT_FREQ, 0, state->centerFreq[updatedNotch][state->updateAxis]);
                 DEBUG_SET(DEBUG_FFT_FREQ, 1, centerFreq);
             }
 
