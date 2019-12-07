@@ -136,14 +136,10 @@ void gyroDataAnalyseStateInit(gyroAnalyseState_t *state)
 //    for gyro rate > 16kHz, we have update frequency of 1kHz => 1ms
     for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
         // any init value
-        for (int i = 0; i < 4; i++) {
-            state->updateCenterFreq[i][axis] = false;
-            state->centerFreq[i][axis] = dynNotchMaxCtrHz;
-            state->centerPeak[i][axis] = 2;
-        }
-        for (int i = 0; i < DYN_NOTCH_COUNT; i++) {
-            biquadFilterInit(&state->gyroNotch[i][axis], dynNotchMaxCtrHz, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
-        }
+        state->updateCenterFreq[axis] = false;
+        state->centerFreq[axis] = dynNotchMaxCtrHz;
+        state->centerPeak[axis] = 4;
+        biquadFilterInit(&state->gyroNotch[axis], dynNotchMaxCtrHz, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
     }
 }
 
@@ -296,78 +292,22 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state)
                 dynNotchMaxFFT = MAX(dynNotchMaxFFT, peakFreq);
             }
 
-            static int updatedNotch = 0;
-
             //Constrain center frequencies.
             centerFreq = constrain(centerFreq, dynNotchMinHz, dynNotchMaxCtrHz);
 
             if (k != FFT_BIN_COUNT - 1) {
-
-                //Test current bin value against previously stored bin.
-                bool updated = false;
-
-                //Check for notch with existing freq to update.
-                for (int a = 0; a < 4; a++) {
-                    if ((centerFreq > lrintf (0.85f * state->centerFreq[a][state->updateAxis])) && (centerFreq < lrintf (1.15f * state->centerFreq[a][state->updateAxis]))) {
-                        if (lrintf(state->fftData[k] * state->fftData[k]) > lrintf(state->centerPeak[a][state->updateAxis] * state->centerPeak[a][state->updateAxis])) {
-                            state->updateCenterFreq[a][state->updateAxis] = true;
-                            state->centerFreq[a][state->updateAxis] = centerFreq;
-                            state->centerPeak[a][state->updateAxis] = state->fftData[k];
-                            updatedNotch = a;
-                        }
-                        updated = true;
-                        break;
-                    }
-                }
-
                 //if no existing bin found
-                if (!updated) {
-                    if (lrintf(state->fftData[k] * state->fftData[k]) > lrintf(state->centerPeak[0][state->updateAxis] * state->centerPeak[0][state->updateAxis]))
+                if (lrintf(state->fftData[k] * state->fftData[k]) > lrintf(state->centerPeak[state->updateAxis] * state->centerPeak[state->updateAxis]))
                     {
-                        state->centerFreq[3][state->updateAxis] = state->centerFreq[2][state->updateAxis];
-                        state->centerPeak[3][state->updateAxis] = state->centerPeak[2][state->updateAxis];
-                        state->centerFreq[2][state->updateAxis] = state->centerFreq[1][state->updateAxis];
-                        state->centerPeak[2][state->updateAxis] = state->centerPeak[1][state->updateAxis];
-                        state->centerFreq[1][state->updateAxis] = state->centerFreq[0][state->updateAxis];
-                        state->centerPeak[1][state->updateAxis] = state->centerPeak[0][state->updateAxis];
-                        updatedNotch = 0;
-                        state->updateCenterFreq[0][state->updateAxis] = true;
-                        state->centerFreq[0][state->updateAxis] = centerFreq;
-                        state->centerPeak[0][state->updateAxis] = state->fftData[k];
+                        state->updateCenterFreq[state->updateAxis] = true;
+                        state->centerFreq[state->updateAxis] = centerFreq;
+                        state->centerPeak[state->updateAxis] = state->fftData[k];
                     }
-                    else if (lrintf(state->fftData[k] * state->fftData[k]) > lrintf(state->centerPeak[1][state->updateAxis] * state->centerPeak[1][state->updateAxis]))
-                    {
-                        state->centerFreq[3][state->updateAxis] = state->centerFreq[2][state->updateAxis];
-                        state->centerPeak[3][state->updateAxis] = state->centerPeak[2][state->updateAxis];
-                        state->centerFreq[2][state->updateAxis] = state->centerFreq[1][state->updateAxis];
-                        state->centerPeak[2][state->updateAxis] = state->centerPeak[1][state->updateAxis];
-                        updatedNotch = 1;
-                        state->updateCenterFreq[1][state->updateAxis] = true;
-                        state->centerFreq[1][state->updateAxis] = centerFreq;
-                        state->centerPeak[1][state->updateAxis] = state->fftData[k];
-                    }
-                    else if (lrintf(state->fftData[k] * state->fftData[k]) > lrintf(state->centerPeak[2][state->updateAxis] * state->centerPeak[2][state->updateAxis]))
-                    {
-                        state->centerFreq[3][state->updateAxis] = state->centerFreq[2][state->updateAxis];
-                        state->centerPeak[3][state->updateAxis] = state->centerPeak[2][state->updateAxis];
-                        updatedNotch = 2;
-                        state->updateCenterFreq[2][state->updateAxis] = true;
-                        state->centerFreq[2][state->updateAxis] = centerFreq;
-                        state->centerPeak[2][state->updateAxis] = state->fftData[k];
-                    }
-                    else if (lrintf(state->fftData[k] * state->fftData[k]) > lrintf(state->centerPeak[3][state->updateAxis] * state->centerPeak[3][state->updateAxis]))
-                    {
-                        updatedNotch = 3;
-                        state->updateCenterFreq[3][state->updateAxis] = true;
-                        state->centerFreq[3][state->updateAxis] = centerFreq;
-                        state->centerPeak[3][state->updateAxis] = state->fftData[k];
-                    }
-                }
             }
 
             if (state->updateAxis == gyroDebugAxis) {
                 DEBUG_SET(DEBUG_FFT, 3, lrintf(calculateWeight(state, k) * 100));
-                DEBUG_SET(DEBUG_FFT_FREQ, 0, state->centerFreq[updatedNotch][state->updateAxis]);
+                DEBUG_SET(DEBUG_FFT_FREQ, 0, state->centerFreq[state->updateAxis]);
                 DEBUG_SET(DEBUG_FFT_FREQ, 1, centerFreq);
             }
 
@@ -379,11 +319,9 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state)
         {
             // 7us
 
-            for (int a = 0; a < 4; a++) {
-                if (state->updateCenterFreq[a][state->updateAxis]) {
-                    biquadFilterUpdate(&state->gyroNotch[a][state->updateAxis], state->centerFreq[a][state->updateAxis], gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
-                    state->updateCenterFreq[a][state->updateAxis] = false;
-                }
+            if (state->updateCenterFreq[state->updateAxis]) {
+                biquadFilterUpdate(&state->gyroNotch[state->updateAxis], state->centerFreq[state->updateAxis], gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
+                state->updateCenterFreq[state->updateAxis] = false;
             }
 
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);
@@ -412,9 +350,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state)
 
 //Apply notch filters to gyro data.
 float FAST_CODE gyroDataAnalyseApply(gyroAnalyseState_t *state, int axis, float values) {
-    for (int i = 0; i < DYN_NOTCH_COUNT; i++) {
-        values = biquadFilterApplyDF1(&state->gyroNotch[i][axis], values);
-    }
+    values = biquadFilterApplyDF1(&state->gyroNotch[axis], values);
     return values;
 }
 

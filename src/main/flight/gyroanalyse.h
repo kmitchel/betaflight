@@ -27,7 +27,6 @@
 
 // max for F3 targets
 #define FFT_WINDOW_SIZE 32
-#define DYN_NOTCH_COUNT 4
 
 typedef struct gyroAnalyseState_s {
     // accumulator for oversampled data => no aliasing and less noise
@@ -49,10 +48,10 @@ typedef struct gyroAnalyseState_s {
     float fftData[FFT_WINDOW_SIZE];
     float rfftData[FFT_WINDOW_SIZE];
 
-    uint16_t centerFreq[4][XYZ_AXIS_COUNT];
-    bool updateCenterFreq[4][XYZ_AXIS_COUNT];
-    float centerPeak[4][XYZ_AXIS_COUNT];
-    biquadFilter_t gyroNotch[DYN_NOTCH_COUNT][XYZ_AXIS_COUNT];
+    uint16_t centerFreq[XYZ_AXIS_COUNT];
+    bool updateCenterFreq[XYZ_AXIS_COUNT];
+    float centerPeak[XYZ_AXIS_COUNT];
+    biquadFilter_t gyroNotch[XYZ_AXIS_COUNT];
 } gyroAnalyseState_t;
 
 STATIC_ASSERT(FFT_WINDOW_SIZE <= (uint8_t) -1, window_size_greater_than_underlying_type);
