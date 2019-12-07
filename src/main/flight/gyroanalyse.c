@@ -138,7 +138,7 @@ void gyroDataAnalyseStateInit(gyroAnalyseState_t *state)
         // any init value
         state->updateCenterFreq[axis] = false;
         state->centerFreq[axis] = dynNotchMaxCtrHz;
-        state->centerPeak[axis] = 4;
+        state->centerPeak[axis] = gyroConfig()->dyn_notch_threshold / 10.0f;
         biquadFilterInit(&state->gyroNotch[axis], dynNotchMaxCtrHz, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
     }
 }
@@ -165,7 +165,7 @@ void gyroDataAnalyse(gyroAnalyseState_t *state)
 
         // calculate mean value of accumulated samples
         for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-//            float sample = state->oversampledGyroAccumulator[axis] * state->maxSampleCountRcp;
+            float sample = state->oversampledGyroAccumulator[axis]; // * state->maxSampleCountRcp;
             state->downsampledGyroData[axis][state->circularBufferIdx] = sample;
             if (axis == gyroDebugAxis) {
                 DEBUG_SET(DEBUG_FFT, 2, lrintf(sample));
