@@ -145,7 +145,7 @@ void gyroDataAnalyseStateInit(gyroAnalyseState_t *state)
 
 void gyroDataAnalysePush(gyroAnalyseState_t *state, const int axis, const float sample)
 {
-    state->oversampledGyroAccumulator[axis] += sample;
+    state->oversampledGyroAccumulator[axis] = sample;
 }
 
 static void gyroDataAnalyseUpdate(gyroAnalyseState_t *state);
@@ -165,7 +165,7 @@ void gyroDataAnalyse(gyroAnalyseState_t *state)
 
         // calculate mean value of accumulated samples
         for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-            float sample = state->oversampledGyroAccumulator[axis] * state->maxSampleCountRcp;
+            float sample = state->oversampledGyroAccumulator[axis]; // * state->maxSampleCountRcp;
             state->downsampledGyroData[axis][state->circularBufferIdx] = sample;
             if (axis == gyroDebugAxis) {
                 DEBUG_SET(DEBUG_FFT, 2, lrintf(sample));
