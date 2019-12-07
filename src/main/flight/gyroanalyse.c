@@ -299,59 +299,62 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state)
             //Constrain center frequencies.
             centerFreq = constrain(centerFreq, dynNotchMinHz, dynNotchMaxCtrHz);
 
-            //Test current bin value against previously stored bin.
-            bool updated = false;
+            if (k != FFT_BIN_COUNT - 1) {
 
-            //Check for notch with existing freq to update.
-            for (int a = 0; a < 4; a++) {
-                if ((centerFreq > lrintf (0.75f * state->centerFreq[a][state->updateAxis])) && (centerFreq < lrintf (1.25f * state->centerFreq[a][state->updateAxis]))) {
-                    if (lrintf(state->fftData[k] * state->fftData[k]) > lrintf(state->centerPeak[a][state->updateAxis] * state->centerPeak[a][state->updateAxis])) {
-                        state->updateCenterFreq[a][state->updateAxis] = true;
-                        state->centerFreq[a][state->updateAxis] = centerFreq;
-                        state->centerPeak[a][state->updateAxis] = state->fftData[k];
+                //Test current bin value against previously stored bin.
+                bool updated = false;
+
+                //Check for notch with existing freq to update.
+                for (int a = 0; a < 4; a++) {
+                    if ((centerFreq > lrintf (0.85f * state->centerFreq[a][state->updateAxis])) && (centerFreq < lrintf (1.15f * state->centerFreq[a][state->updateAxis]))) {
+                        if (lrintf(state->fftData[k] * state->fftData[k]) > lrintf(state->centerPeak[a][state->updateAxis] * state->centerPeak[a][state->updateAxis])) {
+                            state->updateCenterFreq[a][state->updateAxis] = true;
+                            state->centerFreq[a][state->updateAxis] = centerFreq;
+                            state->centerPeak[a][state->updateAxis] = state->fftData[k];
+                        }
+                        updated = true;
+                        break;
                     }
-                    updated = true;
-                    break;
                 }
-            }
 
-            //if no existing bin found
-            if (!updated) {
-                if (lrintf(state->fftData[k] * state->fftData[k]) > lrintf(state->centerPeak[0][state->updateAxis] * state->centerPeak[0][state->updateAxis]))
-                {
-                    state->centerFreq[3][state->updateAxis] = state->centerFreq[2][state->updateAxis];
-                    state->centerPeak[3][state->updateAxis] = state->centerPeak[2][state->updateAxis];
-                    state->centerFreq[2][state->updateAxis] = state->centerFreq[1][state->updateAxis];
-                    state->centerPeak[2][state->updateAxis] = state->centerPeak[1][state->updateAxis];
-                    state->centerFreq[1][state->updateAxis] = state->centerFreq[0][state->updateAxis];
-                    state->centerPeak[1][state->updateAxis] = state->centerPeak[0][state->updateAxis];
-                    state->updateCenterFreq[0][state->updateAxis] = true;
-                    state->centerFreq[0][state->updateAxis] = centerFreq;
-                    state->centerPeak[0][state->updateAxis] = state->fftData[k];
-                }
-                else if (lrintf(state->fftData[k] * state->fftData[k]) > lrintf(state->centerPeak[1][state->updateAxis] * state->centerPeak[1][state->updateAxis]))
-                {
-                    state->centerFreq[3][state->updateAxis] = state->centerFreq[2][state->updateAxis];
-                    state->centerPeak[3][state->updateAxis] = state->centerPeak[2][state->updateAxis];
-                    state->centerFreq[2][state->updateAxis] = state->centerFreq[1][state->updateAxis];
-                    state->centerPeak[2][state->updateAxis] = state->centerPeak[1][state->updateAxis];
-                    state->updateCenterFreq[1][state->updateAxis] = true;
-                    state->centerFreq[1][state->updateAxis] = centerFreq;
-                    state->centerPeak[1][state->updateAxis] = state->fftData[k];
-                }
-                else if (lrintf(state->fftData[k] * state->fftData[k]) > lrintf(state->centerPeak[2][state->updateAxis] * state->centerPeak[2][state->updateAxis]))
-                {
-                    state->centerFreq[3][state->updateAxis] = state->centerFreq[2][state->updateAxis];
-                    state->centerPeak[3][state->updateAxis] = state->centerPeak[2][state->updateAxis];
-                    state->updateCenterFreq[2][state->updateAxis] = true;
-                    state->centerFreq[2][state->updateAxis] = centerFreq;
-                    state->centerPeak[2][state->updateAxis] = state->fftData[k];
-                }
-                else if (lrintf(state->fftData[k] * state->fftData[k]) > lrintf(state->centerPeak[3][state->updateAxis] * state->centerPeak[3][state->updateAxis]))
-                {
-                    state->updateCenterFreq[3][state->updateAxis] = true;
-                    state->centerFreq[3][state->updateAxis] = centerFreq;
-                    state->centerPeak[3][state->updateAxis] = state->fftData[k];
+                //if no existing bin found
+                if (!updated) {
+                    if (lrintf(state->fftData[k] * state->fftData[k]) > lrintf(state->centerPeak[0][state->updateAxis] * state->centerPeak[0][state->updateAxis]))
+                    {
+                        state->centerFreq[3][state->updateAxis] = state->centerFreq[2][state->updateAxis];
+                        state->centerPeak[3][state->updateAxis] = state->centerPeak[2][state->updateAxis];
+                        state->centerFreq[2][state->updateAxis] = state->centerFreq[1][state->updateAxis];
+                        state->centerPeak[2][state->updateAxis] = state->centerPeak[1][state->updateAxis];
+                        state->centerFreq[1][state->updateAxis] = state->centerFreq[0][state->updateAxis];
+                        state->centerPeak[1][state->updateAxis] = state->centerPeak[0][state->updateAxis];
+                        state->updateCenterFreq[0][state->updateAxis] = true;
+                        state->centerFreq[0][state->updateAxis] = centerFreq;
+                        state->centerPeak[0][state->updateAxis] = state->fftData[k];
+                    }
+                    else if (lrintf(state->fftData[k] * state->fftData[k]) > lrintf(state->centerPeak[1][state->updateAxis] * state->centerPeak[1][state->updateAxis]))
+                    {
+                        state->centerFreq[3][state->updateAxis] = state->centerFreq[2][state->updateAxis];
+                        state->centerPeak[3][state->updateAxis] = state->centerPeak[2][state->updateAxis];
+                        state->centerFreq[2][state->updateAxis] = state->centerFreq[1][state->updateAxis];
+                        state->centerPeak[2][state->updateAxis] = state->centerPeak[1][state->updateAxis];
+                        state->updateCenterFreq[1][state->updateAxis] = true;
+                        state->centerFreq[1][state->updateAxis] = centerFreq;
+                        state->centerPeak[1][state->updateAxis] = state->fftData[k];
+                    }
+                    else if (lrintf(state->fftData[k] * state->fftData[k]) > lrintf(state->centerPeak[2][state->updateAxis] * state->centerPeak[2][state->updateAxis]))
+                    {
+                        state->centerFreq[3][state->updateAxis] = state->centerFreq[2][state->updateAxis];
+                        state->centerPeak[3][state->updateAxis] = state->centerPeak[2][state->updateAxis];
+                        state->updateCenterFreq[2][state->updateAxis] = true;
+                        state->centerFreq[2][state->updateAxis] = centerFreq;
+                        state->centerPeak[2][state->updateAxis] = state->fftData[k];
+                    }
+                    else if (lrintf(state->fftData[k] * state->fftData[k]) > lrintf(state->centerPeak[3][state->updateAxis] * state->centerPeak[3][state->updateAxis]))
+                    {
+                        state->updateCenterFreq[3][state->updateAxis] = true;
+                        state->centerFreq[3][state->updateAxis] = centerFreq;
+                        state->centerPeak[3][state->updateAxis] = state->fftData[k];
+                    }
                 }
             }
 
