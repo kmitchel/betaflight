@@ -196,6 +196,7 @@ void pgResetFn_gyroConfig(gyroConfig_t *gyroConfig)
     gyroConfig->dyn_notch_q = 120;
     gyroConfig->dyn_notch_min_hz = 150;
     gyroConfig->gyro_filter_debug_axis = FD_ROLL;
+    gyroConfig->dyn_notch_threshold = 40;
 }
 
 #ifdef USE_MULTI_GYRO

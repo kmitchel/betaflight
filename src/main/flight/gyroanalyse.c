@@ -138,7 +138,7 @@ void gyroDataAnalyseStateInit(gyroAnalyseState_t *state)
         // any init value
         state->updateCenterFreq[axis] = false;
         state->centerFreq[axis] = dynNotchMaxCtrHz;
-        state->centerPeak[axis] = 4;
+        state->centerPeak[axis] = gyroConfig()->dyn_notch_threshold / 10.0f;
         biquadFilterInit(&state->gyroNotch[axis], dynNotchMaxCtrHz, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
     }
 }
