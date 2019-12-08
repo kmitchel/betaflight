@@ -295,6 +295,8 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state)
             //Constrain center frequencies.
             centerFreq = constrain(centerFreq, dynNotchMinHz, dynNotchMaxCtrHz);
 
+            state->centerPeak[state->updateAxis] *= 0.995f;
+
             if (k != FFT_BIN_COUNT - 1) {
                 //if no existing bin found
                 if (lrintf(state->fftData[k] * state->fftData[k]) > lrintf(state->centerPeak[state->updateAxis] * state->centerPeak[state->updateAxis]))
