@@ -275,9 +275,22 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state)
             //Default to the last bin.
             int k = FFT_BIN_COUNT - 1;
 
+            bool change = false;
+
+            //Compare bin against it's neighbors to find peak.  Search for peaks high bin to low bin.  Keep first peak found.
+            //Replace stored peak if next peak is bigger.
             for (int i = FFT_BIN_COUNT - 2; i >= fftStartBin; i--) {
-                if (lrintf(state->fftData[i] * state->fftData[i]) > lrintf(state->fftData[k] * state->fftData[k])){
-                    k = i;
+                int sqrLeftBin = lrintf(state->fftData[i - 1] * state->fftData[i - 1]);
+                int sqrBin = lrintf(state->fftData[i] * state->fftData[i]);
+                int sqrRightBin = lrintf(state->fftData[i + 1] * state->fftData[i + 1]);
+                if (sqrBin > sqrLeftBin && sqrBin > sqrRightBin) {
+                    if (!change) { 
+                        k = i;
+                        change = true;
+                    }
+                    if (change && lrintf(state->fftData[i] * state->fftData[i]) > lrintf(state->fftData[k] * state->fftData[k])) {
+                        k = i;
+                    }
                 }
             }
 
@@ -297,8 +310,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state)
 
             state->centerPeak[state->updateAxis] *= 0.995f;
 
-            if (k != FFT_BIN_COUNT - 1) {
-                //if no existing bin found
+            if (change) {
                 if (lrintf(state->fftData[k] * state->fftData[k]) > lrintf(state->centerPeak[state->updateAxis] * state->centerPeak[state->updateAxis]))
                     {
                         state->updateCenterFreq[state->updateAxis] = true;
