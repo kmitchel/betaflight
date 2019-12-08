@@ -301,7 +301,6 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state)
 
             //Store peak frequency for OSD.
             if (calculateThrottlePercentAbs() > DYN_NOTCH_OSD_MIN_THROTTLE) {
-                uint16_t peakFreq = centerFreq;
                 dynNotchMaxFFT = MAX(dynNotchMaxFFT, peakFreq);
             }
 
