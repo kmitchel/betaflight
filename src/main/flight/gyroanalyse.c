@@ -72,11 +72,11 @@ static uint8_t FAST_RAM_ZERO_INIT maxSampleCount;
 static float FAST_RAM_ZERO_INIT maxSampleCountRcp;
 static float FAST_RAM_ZERO_INIT oversampledGyroAccumulator[XYZ_AXIS_COUNT];
 
-    // downsampled gyro data circular buffer for frequency analysis
+// downsampled gyro data circular buffer for frequency analysis
 static uint8_t FAST_RAM_ZERO_INIT circularBufferIdx;
 static float FAST_RAM_ZERO_INIT downsampledGyroData[XYZ_AXIS_COUNT][FFT_WINDOW_SIZE];
 
-    // update state machine step information
+// update state machine step information
 static uint8_t FAST_RAM_ZERO_INIT updateTicks;
 static uint8_t FAST_RAM_ZERO_INIT updateStep;
 static uint8_t FAST_RAM_ZERO_INIT updateAxis;
