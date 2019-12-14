@@ -87,7 +87,6 @@ static float FAST_RAM_ZERO_INIT rfftData[FFT_WINDOW_SIZE];
 
 static pt1Filter_t FAST_RAM_ZERO_INIT centerFreqFilter[2][XYZ_AXIS_COUNT];
 static uint16_t FAST_RAM_ZERO_INIT centerFreq[2][XYZ_AXIS_COUNT];
-static uint16_t FAST_RAM_ZERO_INIT prevCenterFreq[2][XYZ_AXIS_COUNT];
 static biquadFilter_t FAST_RAM_ZERO_INIT gyroNotch[DYN_NOTCH_COUNT][XYZ_AXIS_COUNT];
 
 // Hanning window, see https://en.wikipedia.org/wiki/Window_function#Hann_.28Hanning.29_window
@@ -157,8 +156,7 @@ void gyroDataAnalyseStateInit()
         // any init value
         for (int i = 0; i < 2; i++) {
             centerFreq[i][axis] = dynNotchMaxCtrHz;
-            prevCenterFreq[i][axis] = dynNotchMaxCtrHz;
-            pt1FilterInit(&centerFreqFilter[i][axis], pt1FilterGain(gyroConfig()->dyn_notch_lpf_hz, 1.0f / fftSamplingRateHz));
+            pt1FilterInit(&centerFreqFilter[i][axis], pt1FilterGain(gyroConfig()->dyn_notch_lpf_hz, gyro.targetLooptime / 12 * 1e-6f));
         }
         for (int i = 0; i < DYN_NOTCH_COUNT; i++) {
             biquadFilterInit(&gyroNotch[i][axis], dynNotchMaxCtrHz, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
@@ -295,7 +293,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
             //Default to the last bin.
             int k[3] = {FFT_BIN_COUNT - 1, FFT_BIN_COUNT - 1, FFT_BIN_COUNT - 1};
 
-            bool change = false;
+            int change = 0;
 
             for (int i = FFT_BIN_COUNT - 2; i >= fftStartBin; i--) {
                 //Compare bin against it's neighbors to find peak.  Rotate peaks high to low.
@@ -303,24 +301,24 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
                     k[2] = k[1];
                     k[1] = k[0];
                     k[0] = i;
-                    change = true;
+                    change++;
                 }
             }
 
             //Sort bins.  Large bin low.
-            if (fftData[k[0]] < fftData[k[2]]) {
+            if (fftData[k[0]] < fftData[k[2]] && change > 2) {
                 int i = k[0];
                 k[0] = k[2];
                 k[2] = i;
             }
 
-            if (fftData[k[0]] < fftData[k[1]]) {
+            if (fftData[k[0]] < fftData[k[1]] && change > 1) {
                 int i = k[0];
                 k[0] = k[1];
                 k[1] = i;
             }
 
-            if (fftData[k[1]] < fftData[k[2]]) {
+            if (fftData[k[1]] < fftData[k[2]] && change > 2) {
                 int i = k[1];
                 k[1] = k[2];
                 k[2] = i;
@@ -338,19 +336,14 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
                     uint16_t peakFreq = freq[0];
                     dynNotchMaxFFT = MAX(dynNotchMaxFFT, peakFreq);
                 }
-            } else {
-                //Use previously stored center frequency.
-                for (int i = 0; i < 2; i++) {
-                    freq[i] = prevCenterFreq[i][updateAxis];
-                }
             }
+
             //Constrain center frequencies.
             freq[0] = constrain(freq[0], dynNotchMinHz, dynNotchMaxCtrHz);
             freq[1] = constrain(freq[1], dynNotchMinHz, dynNotchMaxCtrHz);
 
             //Smooth center frequencies.
             for (int i = 0; i < 2; i++) {
-                prevCenterFreq[i][updateAxis] = freq[i];
                 centerFreq[i][updateAxis] = freq[i];
                 centerFreq[i][updateAxis] = pt1FilterApply(&centerFreqFilter[i][updateAxis], centerFreq[i][updateAxis]);
             }
