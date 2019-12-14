@@ -195,12 +195,8 @@ void arm_radix8_butterfly_f32(float32_t *pSrc, uint16_t fftLen, const float32_t 
 void arm_bitreversal_32(uint32_t *pSrc, const uint16_t bitRevLen, const uint16_t *pBitRevTable);
 
 float calculateWeight(gyroAnalyseState_t *state, uint8_t k) {
-    if (k == FFT_BIN_COUNT - 1){
-        return k;
-    } else {
-        //Credit:  http://sam-koblenski.blogspot.com/2015/11/everyday-dsp-for-programmers-spectral.html
-        return k + (state->fftData[k + 1] - state->fftData[k - 1]) / (4 * state->fftData[k] - 2 * state->fftData[k - 1] - 2 * state->fftData[k + 1]);
-    }
+    //Credit:  http://sam-koblenski.blogspot.com/2015/11/everyday-dsp-for-programmers-spectral.html
+    return k + (state->fftData[k + 1] - state->fftData[k - 1]) / (4 * state->fftData[k] - 2 * state->fftData[k - 1] - 2 * state->fftData[k + 1]);
 }
 
 /*
@@ -279,12 +275,8 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state)
             bool change = false;
 
             for (int i = FFT_BIN_COUNT - 2; i >= fftStartBin; i--) {
-                int sqrLeftBin = rintf(state->fftData[i - 1] * state->fftData[i - 1]);
-                int sqrBin = rintf(state->fftData[i] * state->fftData[i]);
-                int sqrRightBin = rintf(state->fftData[i + 1] * state->fftData[i + 1]);
-
                 //Compare bin against it's neighbors to find peak.  Rotate peaks high to low.
-                if (sqrBin > sqrLeftBin && sqrBin > sqrRightBin &&sqrBin > 16) {
+                if (state->fftData[i] > state->fftData[i - 1] && state->fftData[i] > state->fftData[i + 1] && state->fftData[i] > 4) {
                     k[2] = k[1];
                     k[1] = k[0];
                     k[0] = i;
@@ -293,19 +285,19 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state)
             }
 
             //Sort bins.  Large bin low.
-            if (rintf(state->fftData[k[0]] * state->fftData[k[0]]) < rintf(state->fftData[k[2]] * state->fftData[k[2]])) {
+            if (state->fftData[k[0]] < state->fftData[k[2]]) {
                 int i = k[0];
                 k[0] = k[2];
                 k[2] = i;
             }
 
-            if (rintf(state->fftData[k[0]] * state->fftData[k[0]]) < rintf(state->fftData[k[1]] * state->fftData[k[1]])) {
+            if (state->fftData[k[0]] < state->fftData[k[1]]) {
                 int i = k[0];
                 k[0] = k[1];
                 k[1] = i;
             }
 
-            if (rintf(state->fftData[k[1]] * state->fftData[k[1]]) < rintf(state->fftData[k[2]] * state->fftData[k[2]])) {
+            if (state->fftData[k[1]] < state->fftData[k[2]]) {
                 int i = k[1];
                 k[1] = k[2];
                 k[2] = i;
