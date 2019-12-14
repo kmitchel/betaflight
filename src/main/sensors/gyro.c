@@ -750,7 +750,7 @@ void gyroInitFilters(void)
     dynLpfFilterInit();
 #endif
 #ifdef USE_GYRO_DATA_ANALYSE
-    gyroDataAnalyseStateInit(&gyro.gyroAnalyseState);
+    gyroDataAnalyseStateInit();
 #endif
 }
 
@@ -1074,7 +1074,7 @@ FAST_CODE void gyroUpdate(timeUs_t currentTimeUs)
 
 #ifdef USE_GYRO_DATA_ANALYSE
     if (isDynamicFilterActive()) {
-        gyroDataAnalyse(&gyro.gyroAnalyseState);
+        gyroDataAnalyse();
     }
 #endif
 

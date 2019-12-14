@@ -66,10 +66,6 @@ typedef struct gyro_s {
 
     filterApplyFnPtr notchFilterDynApplyFn;
     filterApplyFnPtr notchFilterDynApplyFn2;
-
-#ifdef USE_GYRO_DATA_ANALYSE
-    gyroAnalyseState_t gyroAnalyseState;
-#endif
 } gyro_t;
 
 extern gyro_t gyro;

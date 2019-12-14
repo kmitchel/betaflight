@@ -29,37 +29,11 @@
 #define FFT_WINDOW_SIZE 32
 #define DYN_NOTCH_COUNT 4
 
-typedef struct gyroAnalyseState_s {
-    // accumulator for oversampled data => no aliasing and less noise
-    uint8_t sampleCount;
-    uint8_t maxSampleCount;
-    float maxSampleCountRcp;
-    float oversampledGyroAccumulator[XYZ_AXIS_COUNT];
-
-    // downsampled gyro data circular buffer for frequency analysis
-    uint8_t circularBufferIdx;
-    float downsampledGyroData[XYZ_AXIS_COUNT][FFT_WINDOW_SIZE];
-
-    // update state machine step information
-    uint8_t updateTicks;
-    uint8_t updateStep;
-    uint8_t updateAxis;
-
-    arm_rfft_fast_instance_f32 fftInstance;
-    float fftData[FFT_WINDOW_SIZE];
-    float rfftData[FFT_WINDOW_SIZE];
-
-    pt1Filter_t centerFreqFilter[2][XYZ_AXIS_COUNT];
-    uint16_t centerFreq[2][XYZ_AXIS_COUNT];
-    uint16_t prevCenterFreq[2][XYZ_AXIS_COUNT];
-    biquadFilter_t gyroNotch[DYN_NOTCH_COUNT][XYZ_AXIS_COUNT];
-} gyroAnalyseState_t;
-
 STATIC_ASSERT(FFT_WINDOW_SIZE <= (uint8_t) -1, window_size_greater_than_underlying_type);
 
-void gyroDataAnalyseStateInit(gyroAnalyseState_t *gyroAnalyse);
-void gyroDataAnalysePush(gyroAnalyseState_t *gyroAnalyse, int axis, float sample);
-void gyroDataAnalyse(gyroAnalyseState_t *gyroAnalyse);
-float gyroDataAnalyseApply(gyroAnalyseState_t *gyroAnalyse, int axis, float values);
+void gyroDataAnalyseStateInit();
+void gyroDataAnalysePush(int axis, float sample);
+void gyroDataAnalyse();
+float gyroDataAnalyseApply(int axis, float values);
 uint16_t getMaxFFT(void);
 void resetMaxFFT(void);

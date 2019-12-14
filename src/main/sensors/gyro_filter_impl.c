@@ -57,8 +57,8 @@ static FAST_CODE void GYRO_FILTER_FUNCTION_NAME(void)
                 GYRO_FILTER_DEBUG_SET(DEBUG_FFT_FREQ, 2, lrintf(gyroADCf));
                 GYRO_FILTER_DEBUG_SET(DEBUG_DYN_LPF, 3, lrintf(gyroADCf));
             }
-            gyroDataAnalysePush(&gyro.gyroAnalyseState, axis, gyroADCf);
-            gyroADCf = gyroDataAnalyseApply(&gyro.gyroAnalyseState, axis, gyroADCf);
+            gyroDataAnalysePush(axis, gyroADCf);
+            gyroADCf = gyroDataAnalyseApply(axis, gyroADCf);
         }
 #endif
 
