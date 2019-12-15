@@ -156,7 +156,7 @@ void gyroDataAnalyseStateInit()
         // any init value
         for (int i = 0; i < 2; i++) {
             centerFreq[i][axis] = dynNotchMaxCtrHz;
-            pt1FilterInit(&centerFreqFilter[i][axis], pt1FilterGain(gyroConfig()->dyn_notch_lpf_hz, gyro.targetLooptime / 12 * 1e-6f));
+            pt1FilterInit(&centerFreqFilter[i][axis], pt1FilterGain(gyroConfig()->dyn_notch_lpf_hz, gyro.targetLooptime * 12 * 1e-6f));
         }
         for (int i = 0; i < DYN_NOTCH_COUNT; i++) {
             biquadFilterInit(&gyroNotch[i][axis], dynNotchMaxCtrHz, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
