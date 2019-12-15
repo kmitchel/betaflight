@@ -186,14 +186,13 @@ void gyroDataAnalyse()
 
         // calculate mean value of accumulated samples
         for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-//            float sample = oversampledGyroAccumulator[axis] * maxSampleCountRcp;
-//            downsampledGyroData[axis][circularBufferIdx] = sample;
-            downsampledGyroData[axis][circularBufferIdx] = oversampledGyroAccumulator[axis];
-//            if (axis == 0) {
-//                DEBUG_SET(DEBUG_FFT, 2, lrintf(sample));
-//            }
+            float sample = oversampledGyroAccumulator[axis] * maxSampleCountRcp;
+            downsampledGyroData[axis][circularBufferIdx] = sample;
+            if (axis == 0) {
+                DEBUG_SET(DEBUG_FFT, 2, lrintf(sample));
+            }
 
-//            oversampledGyroAccumulator[axis] = 0;
+            oversampledGyroAccumulator[axis] = 0;
         }
 
         circularBufferIdx = (circularBufferIdx + 1) % FFT_WINDOW_SIZE;
