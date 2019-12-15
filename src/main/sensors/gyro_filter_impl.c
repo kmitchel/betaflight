@@ -43,7 +43,6 @@ static FAST_CODE void GYRO_FILTER_FUNCTION_NAME(void)
         gyroADCf = rpmFilterGyro(axis, gyroADCf);
 #endif
 
-
         // apply static notch filters and software lowpass filters
         gyroADCf = gyro.notchFilter1ApplyFn((filter_t *)&gyro.notchFilter1[axis], gyroADCf);
         gyroADCf = gyro.notchFilter2ApplyFn((filter_t *)&gyro.notchFilter2[axis], gyroADCf);
@@ -57,8 +56,8 @@ static FAST_CODE void GYRO_FILTER_FUNCTION_NAME(void)
                 GYRO_FILTER_DEBUG_SET(DEBUG_FFT_FREQ, 2, lrintf(gyroADCf));
                 GYRO_FILTER_DEBUG_SET(DEBUG_DYN_LPF, 3, lrintf(gyroADCf));
             }
-            gyroDataAnalysePush(axis, gyroADCf);
             gyroADCf = gyroDataAnalyseApply(axis, gyroADCf);
+            gyroDataAnalysePush(axis, gyroADCf);
         }
 #endif
 
