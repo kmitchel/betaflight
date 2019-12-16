@@ -133,7 +133,8 @@ void gyroDataAnalyseInit()
     dynNotchMaxCtrHz = fftSamplingRateHz * 0.48f; //Stay below Nyquist
 
     for (int i = 0; i < FFT_WINDOW_SIZE; i++) {
-        hanningWindow[i] = (0.5f - 0.5f * cos_approx(2 * M_PIf * i / (FFT_WINDOW_SIZE - 1)));
+//        hanningWindow[i] = (0.5f - 0.5f * cos_approx(2 * M_PIf * i / (FFT_WINDOW_SIZE - 1)));
+        hanningWindow[i] = i > 15 ? 2.0f - 2.0f * i / (FFT_WINDOW_SIZE - 1) : 2.0f * i / (FFT_WINDOW_SIZE - 1);
     }
 }
 
@@ -221,12 +222,7 @@ void arm_bitreversal_32(uint32_t *pSrc, const uint16_t bitRevLen, const uint16_t
 
 float calculateWeight(gyroAnalyseState_t *state, uint8_t k) {
     if (k == FFT_BIN_COUNT - 1) {
-        float dataSquared1 = state->fftData[k - 1] * state->fftData[k - 1];
-        float dataSquared2 = state->fftData[k] * state->fftData[k];
-        float sumSquared = dataSquared1 + dataSquared2;
-        float sumSquaredWeighted = dataSquared1 * (k - 1);
-        sumSquaredWeighted += dataSquared2 * (k);
-        return sumSquaredWeighted / sumSquared;
+        return k;
     } else {
         float dataSquared1 = state->fftData[k - 1] * state->fftData[k - 1];
         float dataSquared2 = state->fftData[k] * state->fftData[k];
