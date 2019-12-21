@@ -1271,11 +1271,11 @@ static float applyLaunchControl(int axis, const rollAndPitchTrims_t *angleTrim)
 // Based on 2DOF reference design (matlab)
 
 
-//#ifdef STM32F7
-//void FAST_CODE_NOINLINE pidController(const pidProfile_t *pidProfile, timeUs_t currentTimeUs)
-//#else
-void FAST_CODE FAST_CODE_NOINLINE  pidController(const pidProfile_t *pidProfile, timeUs_t currentTimeUs)
-//#endif
+#ifdef STM32F7
+void FAST_CODE FAST_CODE_NOINLINE pidController(const pidProfile_t *pidProfile, timeUs_t currentTimeUs)
+#else
+void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTimeUs)
+#endif
 {
     static float previousGyroRateDterm[XYZ_AXIS_COUNT];
 #ifdef USE_INTERPOLATED_SP

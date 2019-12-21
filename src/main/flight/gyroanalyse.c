@@ -51,7 +51,7 @@
 // NB  FFT_WINDOW_SIZE is set to 32 in gyroanalyse.h
 #define FFT_BIN_COUNT             (FFT_WINDOW_SIZE / 2)
 // we need 4 steps for each axis
-#ifdef TM32F7
+#ifdef STM32F7
 #define DYN_NOTCH_CALC_TICKS      (XYZ_AXIS_COUNT)
 #else
 #define DYN_NOTCH_CALC_TICKS      (XYZ_AXIS_COUNT * 4)
@@ -283,7 +283,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
                 break;
             }
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);
-#ifndef TM32F7
+#ifndef STM32F7
             break;
 #else
             FALLTHROUGH;
@@ -303,7 +303,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
             // this does not work in place => fftData AND rfftData needed
             stage_rfft_f32(&fftInstance, fftData, rfftData);
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);
-#ifndef TM32F7
+#ifndef STM32F7
             break;
 #else
             FALLTHROUGH;
@@ -399,7 +399,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
             }
             // Debug FFT_Freq carries raw gyro, gyro after first filter set, FFT centre for roll and for pitch
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);
-#ifndef TM32F7
+#ifndef STM32F7
             break;
 #else
             FALLTHROUGH;
@@ -440,7 +440,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
         }
     }
 
-#ifndef TM32F7
+#ifndef STM32F7
     updateStep = (updateStep + 1) % STEP_COUNT;
 #else
     updateStep = STEP_ARM_CFFT_F32;
