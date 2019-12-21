@@ -161,6 +161,7 @@ void gyroDataAnalyseStateInit()
         for (int i = 0; i < 3; i++) {
             centerFreq[i][axis] = dynNotchMaxCtrHz;
             pt1FilterInit(&centerFreqFilter[i][axis], pt1FilterGain(gyroConfig()->dyn_notch_lpf_hz, 1.0f / fftSamplingRateHz * DYN_NOTCH_CALC_TICKS));
+            centerFreqFilter[i][axis].state = dynNotchMaxCtrHz;
         }
         for (int i = 0; i < DYN_NOTCH_COUNT; i++) {
             biquadFilterInit(&gyroNotch[i][axis], dynNotchMaxCtrHz, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
@@ -318,7 +319,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
         }
         case STEP_CALC_FREQUENCIES:
         {
-            float threshold;
+            float threshold = 0;
             int count = 0; 
 
             for (int i = FFT_BIN_COUNT - 2; i >= fftStartBin; i--) {
@@ -327,7 +328,8 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
             }
 
             threshold /= count;
-            threshold = sqrtf(threshold) * 2.0f;
+            threshold = sqrtf(threshold);
+            threshold = MAX(threshold, 2);
 
             //Default to the last bin.
             int k[3] = {FFT_BIN_COUNT - 1, FFT_BIN_COUNT - 1, FFT_BIN_COUNT - 1};
@@ -407,7 +409,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
         {
             // 7us
             //Update notch filters.  When width != 0, cascade.  Otherwise one notch for each frequency.
-            if (dualNotch) {
+            if (dualNotch && change > 0) {
                 biquadFilterUpdate(&gyroNotch[0][updateAxis], centerFreq[0][updateAxis] * dynNotch1Ctr, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
                 biquadFilterUpdate(&gyroNotch[1][updateAxis], centerFreq[0][updateAxis] * dynNotch2Ctr, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
                 biquadFilterUpdate(&gyroNotch[2][updateAxis], centerFreq[1][updateAxis] * dynNotch1Ctr, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
