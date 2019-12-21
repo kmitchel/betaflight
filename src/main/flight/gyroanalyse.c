@@ -223,13 +223,13 @@ void arm_bitreversal_32(uint32_t *pSrc, const uint16_t bitRevLen, const uint16_t
 //     return k + (fftData[k + 1] - fftData[k - 1]) / (4 * fftData[k] - 2 * fftData[k - 1] - 2 * fftData[k + 1]);
 // }
 
-float calculateWeight(gyroAnalyseState_t *state, uint8_t k) {
+float calculateWeight(uint8_t k) {
     if (k == FFT_BIN_COUNT - 1) {
         return k;
     } else {
-        float dataSquared1 = state->fftData[k - 1] * state->fftData[k - 1];
-        float dataSquared2 = state->fftData[k] * state->fftData[k];
-        float dataSquared3 = state->fftData[k + 1] * state->fftData[k + 1];
+        float dataSquared1 = fftData[k - 1] * fftData[k - 1];
+        float dataSquared2 = fftData[k] * fftData[k];
+        float dataSquared3 = fftData[k + 1] * fftData[k + 1];
         float sumSquared = dataSquared1 + dataSquared2 + dataSquared3;
         float sumSquaredWeighted = dataSquared1 * (k - 1);
         sumSquaredWeighted += dataSquared2 * (k);
@@ -307,7 +307,6 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
             FALLTHROUGH;
 #endif
         }
-        }
         case STEP_ARM_CMPLX_MAG_F32:
         {
             // 8us
@@ -318,6 +317,16 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
         }
         case STEP_CALC_FREQUENCIES:
         {
+            float threshold;
+            int count = 0; 
+
+            for (int i = FFT_BIN_COUNT - 2; i >= fftStartBin; i--) {
+                threshold += fftData[i] * fftData[i];
+                count++;
+            }
+            threshold /= count;
+            threshold = sqrt(threshold);
+
             //Default to the last bin.
             int k[3] = {FFT_BIN_COUNT - 1, FFT_BIN_COUNT - 1, FFT_BIN_COUNT - 1};
 
@@ -325,7 +334,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
 
             for (int i = FFT_BIN_COUNT - 2; i >= fftStartBin; i--) {
                 //Compare bin against it's neighbors to find peak.  Rotate peaks high to low.
-                if (fftData[i] > fftData[i - 1] && fftData[i] > fftData[i + 1] && fftData[i] > 4) {
+                if (fftData[i] > fftData[i - 1] && fftData[i] > fftData[i + 1] && fftData[i] > threshold) {
                     k[2] = k[1];
                     k[1] = k[0];
                     k[0] = i;
@@ -368,7 +377,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
             }
 
             //Constrain and smooth center frequencies.
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < change; i++) {
                 freq[i] = constrain(freq[i], dynNotchMinHz, dynNotchMaxCtrHz);
                 centerFreq[i][updateAxis] = pt1FilterApply(&centerFreqFilter[i][updateAxis], freq[i]);
             }
@@ -391,7 +400,6 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
 #else
             FALLTHROUGH;
 #endif
-        }
         }
         case STEP_UPDATE_FILTERS:
         {
