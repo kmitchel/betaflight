@@ -238,6 +238,7 @@ float calculateWeight(uint8_t k) {
     }
 }
 
+static int change = 0;
 
 /*
  * Analyse last gyro data from the last FFT_WINDOW_SIZE milliseconds
@@ -330,7 +331,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
             //Default to the last bin.
             int k[3] = {FFT_BIN_COUNT - 1, FFT_BIN_COUNT - 1, FFT_BIN_COUNT - 1};
 
-            int change = 0;
+            change = 0;
 
             for (int i = FFT_BIN_COUNT - 2; i >= fftStartBin; i--) {
                 //Compare bin against it's neighbors to find peak.  Rotate peaks high to low.
@@ -411,9 +412,9 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
                 biquadFilterUpdate(&gyroNotch[2][updateAxis], centerFreq[1][updateAxis] * dynNotch1Ctr, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
                 biquadFilterUpdate(&gyroNotch[3][updateAxis], centerFreq[1][updateAxis] * dynNotch2Ctr, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
             } else {
-                biquadFilterUpdate(&gyroNotch[0][updateAxis], centerFreq[0][updateAxis], gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
-                biquadFilterUpdate(&gyroNotch[1][updateAxis], centerFreq[1][updateAxis], gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
-                biquadFilterUpdate(&gyroNotch[2][updateAxis], centerFreq[2][updateAxis], gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
+                for (int i = 0; i < change; i++) {
+                    biquadFilterUpdate(&gyroNotch[i][updateAxis], centerFreq[i][updateAxis], gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
+                }
             }
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);
 
