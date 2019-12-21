@@ -51,7 +51,7 @@
 // NB  FFT_WINDOW_SIZE is set to 32 in gyroanalyse.h
 #define FFT_BIN_COUNT             (FFT_WINDOW_SIZE / 2)
 // we need 4 steps for each axis
-#ifdef STM32F7
+#ifdef TM32F7
 #define DYN_NOTCH_CALC_TICKS      (XYZ_AXIS_COUNT)
 #else
 #define DYN_NOTCH_CALC_TICKS      (XYZ_AXIS_COUNT * 4)
@@ -178,7 +178,7 @@ static void gyroDataAnalyseUpdate();
 /*
  * Collect gyro data, to be analysed in gyroDataAnalyseUpdate function
  */
-void gyroDataAnalyse()
+void FAST_CODE_NOINLINE gyroDataAnalyse()
 {
     // samples should have been pushed by `gyroDataAnalysePush`
     // if gyro sampling is > 1kHz, accumulate multiple samples
@@ -282,7 +282,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
                 break;
             }
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);
-#ifndef STM32F7
+#ifndef TM32F7
             break;
 #else
             FALLTHROUGH;
@@ -302,7 +302,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
             // this does not work in place => fftData AND rfftData needed
             stage_rfft_f32(&fftInstance, fftData, rfftData);
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);
-#ifndef STM32F7
+#ifndef TM32F7
             break;
 #else
             FALLTHROUGH;
@@ -325,8 +325,9 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
                 threshold += fftData[i] * fftData[i];
                 count++;
             }
+
             threshold /= count;
-            threshold = sqrt(threshold);
+            threshold = sqrtf(threshold) * 2.0f;
 
             //Default to the last bin.
             int k[3] = {FFT_BIN_COUNT - 1, FFT_BIN_COUNT - 1, FFT_BIN_COUNT - 1};
@@ -396,7 +397,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
             }
             // Debug FFT_Freq carries raw gyro, gyro after first filter set, FFT centre for roll and for pitch
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);
-#ifndef STM32F7
+#ifndef TM32F7
             break;
 #else
             FALLTHROUGH;
@@ -437,7 +438,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
         }
     }
 
-#ifndef STM32F7
+#ifndef TM32F7
     updateStep = (updateStep + 1) % STEP_COUNT;
 #else
     updateStep = STEP_ARM_CFFT_F32;

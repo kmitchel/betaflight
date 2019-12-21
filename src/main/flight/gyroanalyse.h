@@ -26,7 +26,12 @@
 
 
 // max for F3 targets
+#ifdef TM32F7
+#define FFT_WINDOW_SIZE 64
+#else
 #define FFT_WINDOW_SIZE 32
+#endif
+
 #define DYN_NOTCH_COUNT 4
 
 STATIC_ASSERT(FFT_WINDOW_SIZE <= (uint8_t) -1, window_size_greater_than_underlying_type);

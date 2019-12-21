@@ -1271,11 +1271,11 @@ static float applyLaunchControl(int axis, const rollAndPitchTrims_t *angleTrim)
 // Based on 2DOF reference design (matlab)
 
 
-#ifdef STM32F7
-void FAST_CODE_NOINLINE pidController(const pidProfile_t *pidProfile, timeUs_t currentTimeUs)
-#else
-void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTimeUs)
-#endif
+//#ifdef STM32F7
+//void FAST_CODE_NOINLINE pidController(const pidProfile_t *pidProfile, timeUs_t currentTimeUs)
+//#else
+void FAST_CODE FAST_CODE_NOINLINE  pidController(const pidProfile_t *pidProfile, timeUs_t currentTimeUs)
+//#endif
 {
     static float previousGyroRateDterm[XYZ_AXIS_COUNT];
 #ifdef USE_INTERPOLATED_SP
@@ -1343,7 +1343,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
     for (int axis = FD_ROLL; axis <= FD_YAW; ++axis) {
         gyroRateDterm[axis] = gyro.gyroADCf[axis];
 #ifdef USE_RPM_FILTER
-        gyroRateDterm[axis] = rpmFilterDterm(axis,gyroRateDterm[axis]);
+//        gyroRateDterm[axis] = rpmFilterDterm(axis,gyroRateDterm[axis]);
 #endif
         gyroRateDterm[axis] = dtermNotchApplyFn((filter_t *) &dtermNotch[axis], gyroRateDterm[axis]);
         gyroRateDterm[axis] = dtermLowpassApplyFn((filter_t *) &dtermLowpass[axis], gyroRateDterm[axis]);
