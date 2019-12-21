@@ -51,8 +51,11 @@
 // NB  FFT_WINDOW_SIZE is set to 32 in gyroanalyse.h
 #define FFT_BIN_COUNT             (FFT_WINDOW_SIZE / 2)
 // we need 4 steps for each axis
+#ifdef STM32F7
+#define DYN_NOTCH_CALC_TICKS      (XYZ_AXIS_COUNT)
+#else
 #define DYN_NOTCH_CALC_TICKS      (XYZ_AXIS_COUNT * 4)
-
+#endif
 #define DYN_NOTCH_OSD_MIN_THROTTLE 20
 
 static uint16_t FAST_RAM_ZERO_INIT fftSamplingRateHz;
@@ -278,7 +281,11 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
                 break;
             }
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);
+#ifndef STM32F7
             break;
+#else
+            FALLTHROUGH;
+#endif
         }
         case STEP_BITREVERSAL:
         {
@@ -294,7 +301,12 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
             // this does not work in place => fftData AND rfftData needed
             stage_rfft_f32(&fftInstance, fftData, rfftData);
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);
+#ifndef STM32F7
             break;
+#else
+            FALLTHROUGH;
+#endif
+        }
         }
         case STEP_ARM_CMPLX_MAG_F32:
         {
@@ -374,7 +386,12 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
             }
             // Debug FFT_Freq carries raw gyro, gyro after first filter set, FFT centre for roll and for pitch
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);
+#ifndef STM32F7
             break;
+#else
+            FALLTHROUGH;
+#endif
+        }
         }
         case STEP_UPDATE_FILTERS:
         {
@@ -411,7 +428,11 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
         }
     }
 
+#ifndef STM32F7
     updateStep = (updateStep + 1) % STEP_COUNT;
+#else
+    updateStep = STEP_ARM_CFFT_F32;
+#endif
 }
 
 //Apply notch filters to gyro data.
