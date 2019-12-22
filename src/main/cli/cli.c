@@ -5737,7 +5737,7 @@ static void cliTimer(char *cmdline)
 
     pch = strtok_r(NULL, " ", &saveptr);
     if (pch) {
-        int timerIndex;
+        int timerIndex = TIMER_INDEX_UNDEFINED;
         if (strcasecmp(pch, "list") == 0) {
             /* output the list of available options */
             const timerHardware_t *timer;
