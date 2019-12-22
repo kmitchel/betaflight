@@ -88,9 +88,13 @@ static arm_rfft_fast_instance_f32 FAST_RAM_ZERO_INIT fftInstance;
 static float FAST_RAM_ZERO_INIT fftData[FFT_WINDOW_SIZE];
 static float FAST_RAM_ZERO_INIT rfftData[FFT_WINDOW_SIZE];
 
-static pt1Filter_t FAST_RAM_ZERO_INIT centerFreqFilter[3][XYZ_AXIS_COUNT];
-static uint16_t FAST_RAM_ZERO_INIT centerFreq[3][XYZ_AXIS_COUNT];
-static biquadFilter_t FAST_RAM_ZERO_INIT gyroNotch[DYN_NOTCH_COUNT][XYZ_AXIS_COUNT];
+typedef struct notchGroup_s {
+    pt1Filter_t centerFreqFilter[3];
+    float centerFreq[3];
+    biquadFilter_t gyroNotch[DYN_NOTCH_COUNT];
+} notchGroup_t;
+
+static FAST_RAM_ZERO_INIT notchGroup_t notchGroup[XYZ_AXIS_COUNT];
 
 static int FAST_RAM change = 0;
 
@@ -161,12 +165,13 @@ void gyroDataAnalyseStateInit()
     for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
         // any init value
         for (int i = 0; i < 3; i++) {
-            centerFreq[i][axis] = dynNotchMaxCtrHz;
-            pt1FilterInit(&centerFreqFilter[i][axis], pt1FilterGain(gyroConfig()->dyn_notch_lpf_hz, 1.0f / fftSamplingRateHz * DYN_NOTCH_CALC_TICKS));
-            centerFreqFilter[i][axis].state = dynNotchMaxCtrHz;
+            notchGroup[axis].centerFreq[i] = dynNotchMaxCtrHz;
+            pt1FilterInit(&notchGroup[axis].centerFreqFilter[i], pt1FilterGain(gyroConfig()->dyn_notch_lpf_hz, 1.0f / fftSamplingRateHz * DYN_NOTCH_CALC_TICKS));
+            notchGroup[axis].centerFreqFilter[i].state = dynNotchMaxCtrHz;
         }
         for (int i = 0; i < DYN_NOTCH_COUNT; i++) {
-            biquadFilterInit(&gyroNotch[i][axis], dynNotchMaxCtrHz, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
+            biquadFilterInit(&notchGroup[axis].gyroNotch[i], dynNotchMaxCtrHz, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
+
         }
     }
 }
@@ -383,19 +388,19 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
             //Constrain and smooth center frequencies.
             for (int i = 0; i < change; i++) {
                 freq[i] = constrain(freq[i], dynNotchMinHz, dynNotchMaxCtrHz);
-                centerFreq[i][updateAxis] = pt1FilterApply(&centerFreqFilter[i][updateAxis], freq[i]);
+                notchGroup[updateAxis].centerFreq[i] = pt1FilterApply(&notchGroup[updateAxis].centerFreqFilter[i], freq[i]);
             }
 
             if (updateAxis == 0) {
                 DEBUG_SET(DEBUG_FFT, 3, lrintf(calculateWeight(k[0]) * 100));
-                DEBUG_SET(DEBUG_FFT_FREQ, 0, centerFreq[0][updateAxis]);
-                DEBUG_SET(DEBUG_DYN_LPF, 1, centerFreq[0][updateAxis]);
+                DEBUG_SET(DEBUG_FFT_FREQ, 0, notchGroup[updateAxis].centerFreq[0]);
+                DEBUG_SET(DEBUG_DYN_LPF, 1, notchGroup[updateAxis].centerFreq[0]);
 //                DEBUG_SET(DEBUG_DYN_LPF, 2, centerFreq[0]);
-                DEBUG_SET(DEBUG_DYN_LPF, 2, centerFreq[1][updateAxis]);
+                DEBUG_SET(DEBUG_DYN_LPF, 2, notchGroup[updateAxis].centerFreq[1]);
 
             }
             if (updateAxis == 1) {
-                DEBUG_SET(DEBUG_FFT_FREQ, 1, centerFreq[0][updateAxis]);
+                DEBUG_SET(DEBUG_FFT_FREQ, 1, notchGroup[updateAxis].centerFreq[0]);
             }
             // Debug FFT_Freq carries raw gyro, gyro after first filter set, FFT centre for roll and for pitch
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);
@@ -410,13 +415,13 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
             // 7us
             //Update notch filters.  When width != 0, cascade.  Otherwise one notch for each frequency.
             if (dualNotch && change > 0) {
-                biquadFilterUpdate(&gyroNotch[0][updateAxis], centerFreq[0][updateAxis] * dynNotch1Ctr, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
-                biquadFilterUpdate(&gyroNotch[1][updateAxis], centerFreq[0][updateAxis] * dynNotch2Ctr, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
-                biquadFilterUpdate(&gyroNotch[2][updateAxis], centerFreq[1][updateAxis] * dynNotch1Ctr, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
-                biquadFilterUpdate(&gyroNotch[3][updateAxis], centerFreq[1][updateAxis] * dynNotch2Ctr, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
+                biquadFilterUpdate(&notchGroup[updateAxis].gyroNotch[0], notchGroup[updateAxis].centerFreq[0] * dynNotch1Ctr, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
+                biquadFilterUpdate(&notchGroup[updateAxis].gyroNotch[1], notchGroup[updateAxis].centerFreq[0] * dynNotch2Ctr, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
+                biquadFilterUpdate(&notchGroup[updateAxis].gyroNotch[2], notchGroup[updateAxis].centerFreq[1] * dynNotch1Ctr, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
+                biquadFilterUpdate(&notchGroup[updateAxis].gyroNotch[3], notchGroup[updateAxis].centerFreq[1] * dynNotch2Ctr, gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
             } else {
                 for (int i = 0; i < change; i++) {
-                    biquadFilterUpdate(&gyroNotch[i][updateAxis], centerFreq[i][updateAxis], gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
+                    biquadFilterUpdate(&notchGroup[updateAxis].gyroNotch[i], notchGroup[updateAxis].centerFreq[i], gyro.targetLooptime, dynNotchQ, FILTER_NOTCH);
                 }
             }
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);
@@ -448,14 +453,14 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
 }
 
 //Apply notch filters to gyro data.
-float FAST_CODE gyroDataAnalyseApply(int axis, float values) {
+float gyroDataAnalyseApply(int axis, float values) {
     if (dualNotch){
         for (int i = 0; i < DYN_NOTCH_COUNT; i++) {
-            values = biquadFilterApplyDF1(&gyroNotch[i][axis], values);
+            values = biquadFilterApplyDF1(&notchGroup[axis].gyroNotch[i], values);
         }
     } else {
         for (int i = 0; i < 3; i++) {
-            values = biquadFilterApplyDF1(&gyroNotch[i][axis], values);
+            values = biquadFilterApplyDF1(&notchGroup[axis].gyroNotch[i], values);
         }
     }
     return values;
