@@ -26,7 +26,7 @@
 
 
 // max for F3 targets
-#ifdef STM32F7
+#ifdef TM32F7
 #define FFT_WINDOW_SIZE 64
 #else
 #define FFT_WINDOW_SIZE 32

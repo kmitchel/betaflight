@@ -51,7 +51,7 @@
 // NB  FFT_WINDOW_SIZE is set to 32 in gyroanalyse.h
 #define FFT_BIN_COUNT             (FFT_WINDOW_SIZE / 2)
 // we need 4 steps for each axis
-#ifdef STM32F7
+#ifdef TM32F7
 #define DYN_NOTCH_CALC_TICKS      (XYZ_AXIS_COUNT)
 #else
 #define DYN_NOTCH_CALC_TICKS      (XYZ_AXIS_COUNT * 4)
@@ -94,7 +94,7 @@ typedef struct notchGroup_s {
     biquadFilter_t gyroNotch[DYN_NOTCH_COUNT];
 } notchGroup_t;
 
-static FAST_RAM_ZERO_INIT notchGroup_t notchGroup[XYZ_AXIS_COUNT];
+static FAST_RAM notchGroup_t notchGroup[XYZ_AXIS_COUNT];
 
 static int FAST_RAM change = 0;
 
@@ -142,8 +142,8 @@ void gyroDataAnalyseInit()
     dynNotchMaxCtrHz = fftSamplingRateHz * 0.48f; //Stay below Nyquist
 
     for (int i = 0; i < FFT_WINDOW_SIZE; i++) {
-//        hanningWindow[i] = (0.5f - 0.5f * cos_approx(2 * M_PIf * i / (FFT_WINDOW_SIZE - 1)));
-        hanningWindow[i] = i > FFT_WINDOW_SIZE / 2 - 1 ? 2.0f - 2.0f * i / (FFT_WINDOW_SIZE - 1) : 2.0f * i / (FFT_WINDOW_SIZE - 1);
+        hanningWindow[i] = (0.5f - 0.5f * cos_approx(2 * M_PIf * i / (FFT_WINDOW_SIZE - 1)));
+//        hanningWindow[i] = i > FFT_WINDOW_SIZE / 2 - 1 ? 2.0f - 2.0f * i / (FFT_WINDOW_SIZE - 1) : 2.0f * i / (FFT_WINDOW_SIZE - 1);
     }
 }
 
@@ -288,9 +288,10 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
                 break;
             }
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);
-#ifndef STM32F7
+#ifndef TM32F7
             break;
 #else
+            updateStep++;
             FALLTHROUGH;
 #endif
         }
@@ -308,9 +309,10 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
             // this does not work in place => fftData AND rfftData needed
             stage_rfft_f32(&fftInstance, fftData, rfftData);
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);
-#ifndef STM32F7
+#ifndef TM32F7
             break;
 #else
+            updateStep++;
             FALLTHROUGH;
 #endif
         }
@@ -341,7 +343,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
 
             change = 0;
 
-            for (int i = FFT_BIN_COUNT - 2; i >= fftStartBin; i--) {
+            for (int i = FFT_BIN_COUNT - 2; i > fftStartBin; i--) {
                 //Compare bin against it's neighbors to find peak.  Rotate peaks high to low.
                 if (fftData[i] > fftData[i - 1] && fftData[i] > fftData[i + 1] && fftData[i] > threshold) {
                     k[2] = k[1];
@@ -404,9 +406,10 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
             }
             // Debug FFT_Freq carries raw gyro, gyro after first filter set, FFT centre for roll and for pitch
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);
-#ifndef STM32F7
+#ifndef TM32F7
             break;
 #else
+            updateStep++;
             FALLTHROUGH;
 #endif
         }
@@ -444,12 +447,8 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
             DEBUG_SET(DEBUG_FFT_TIME, 1, micros() - startTime);
         }
     }
-
-#ifndef STM32F7
     updateStep = (updateStep + 1) % STEP_COUNT;
-#else
-    updateStep = STEP_ARM_CFFT_F32;
-#endif
+
 }
 
 //Apply notch filters to gyro data.
