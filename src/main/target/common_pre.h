@@ -240,6 +240,7 @@
 #define USE_VTX_CONTROL
 #define USE_VTX_SMARTAUDIO
 #define USE_VTX_TRAMP
+#define USE_VTX_TABLE
 #endif
 
 #if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 10))
@@ -316,7 +317,7 @@
 
 #endif // FLASH_SIZE > 128
 
-#if (FLASH_SIZE > 256)
+#if (FLASH_SIZE > 256 && !DEBUG)
 #define USE_AIRMODE_LPF
 #define USE_CANVAS
 #define USE_DASHBOARD

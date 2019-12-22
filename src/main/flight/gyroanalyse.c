@@ -92,6 +92,8 @@ static pt1Filter_t FAST_RAM_ZERO_INIT centerFreqFilter[3][XYZ_AXIS_COUNT];
 static uint16_t FAST_RAM_ZERO_INIT centerFreq[3][XYZ_AXIS_COUNT];
 static biquadFilter_t FAST_RAM_ZERO_INIT gyroNotch[DYN_NOTCH_COUNT][XYZ_AXIS_COUNT];
 
+static int FAST_RAM change = 0;
+
 // Hanning window, see https://en.wikipedia.org/wiki/Window_function#Hann_.28Hanning.29_window
 static FAST_RAM_ZERO_INIT float hanningWindow[FFT_WINDOW_SIZE];
 
@@ -104,9 +106,9 @@ void gyroDataAnalyseInit()
     dynNotch2Ctr      = 1 + gyroConfig()->dyn_notch_width_percent / 100.0f;
     dynNotchQ         = gyroConfig()->dyn_notch_q / 100.0f;
  
-    if (gyroConfig()->dyn_notch_width_percent == 0) {
+//    if (gyroConfig()->dyn_notch_width_percent == 0) {
         dualNotch = false;
-    }
+//    }
 
     if (dynNotchRange == DYN_NOTCH_RANGE_AUTO) {
         if (gyroConfig()->dyn_lpf_gyro_max_hz > 333) {
@@ -137,7 +139,7 @@ void gyroDataAnalyseInit()
 
     for (int i = 0; i < FFT_WINDOW_SIZE; i++) {
 //        hanningWindow[i] = (0.5f - 0.5f * cos_approx(2 * M_PIf * i / (FFT_WINDOW_SIZE - 1)));
-        hanningWindow[i] = i > 15 ? 2.0f - 2.0f * i / (FFT_WINDOW_SIZE - 1) : 2.0f * i / (FFT_WINDOW_SIZE - 1);
+        hanningWindow[i] = i > FFT_WINDOW_SIZE / 2 - 1 ? 2.0f - 2.0f * i / (FFT_WINDOW_SIZE - 1) : 2.0f * i / (FFT_WINDOW_SIZE - 1);
     }
 }
 
@@ -238,8 +240,6 @@ float calculateWeight(uint8_t k) {
         return sumSquaredWeighted / sumSquared;
     }
 }
-
-static int change = 0;
 
 /*
  * Analyse last gyro data from the last FFT_WINDOW_SIZE milliseconds
@@ -365,7 +365,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate()
                 k[2] = i;
             }
 
-            uint16_t freq[3];
+            uint16_t freq[3] = {dynNotchMaxCtrHz, dynNotchMaxCtrHz, dynNotchMaxCtrHz};
 
             if (change){
                 //calculate weighted bin.
