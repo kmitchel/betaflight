@@ -24,9 +24,7 @@
 
 #include "common/filter.h"
 
-
-// max for F3 targets
-#define FFT_WINDOW_SIZE 32
+#define FFT_WINDOW_SIZE 32 // Max for F3
 
 typedef struct gyroAnalyseState_s {
     // accumulator for oversampled data => no aliasing and less noise
@@ -48,9 +46,8 @@ typedef struct gyroAnalyseState_s {
     float fftData[FFT_WINDOW_SIZE];
     float rfftData[FFT_WINDOW_SIZE];
 
-    biquadFilter_t detectedFrequencyFilter[XYZ_AXIS_COUNT];
-    uint16_t centerFreq[XYZ_AXIS_COUNT];
-    uint16_t prevCenterFreq[XYZ_AXIS_COUNT];
+    float centerFreq[XYZ_AXIS_COUNT];
+
 } gyroAnalyseState_t;
 
 STATIC_ASSERT(FFT_WINDOW_SIZE <= (uint8_t) -1, window_size_greater_than_underlying_type);
