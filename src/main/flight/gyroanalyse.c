@@ -158,7 +158,7 @@ void gyroDataAnalyseInit(uint32_t targetLooptimeUs)
 
     fftStartBin = MAX(2, dynNotchMinHz / lrintf(fftResolution)); // can't use bin 0
 
-    dynNotchMaxCtrHz = fftSamplingRateHz / 2; // Nyquist; frequency at which each axis updates
+    dynNotchMaxCtrHz = fftSamplingRateHz * 0.48; // Stay below Nyquist; frequency at which each axis updates
 
     smoothFactor = 2 * 3.14f * DYN_NOTCH_SMOOTH_HZ / (gyroLoopRateHz / 12); // minimum PT1 k value
 
@@ -364,7 +364,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
             } else {
                 centerFreq = state->centerFreq[state->updateAxis];
             }
-            centerFreq = fmax(centerFreq, dynNotchMinHz);
+            centerFreq = constrainf(centerFreq, dynNotchMinHz, dynNotchMaxCtrHz);
 
             // PT1 style dynamic smoothing moves rapidly towards big peaks and slowly away, up to 5x faster
             float dynamicFactor = constrainf(dataMax / dataMin, 1.0f, 5.0f);
