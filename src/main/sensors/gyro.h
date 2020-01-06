@@ -32,6 +32,8 @@
 #include "flight/gyroanalyse.h"
 #endif
 
+#include "flight/pid.h"
+
 #include "pg/pg.h"
 
 #define FILTER_FREQUENCY_MAX 4000 // maximum frequency for filter cutoffs (nyquist limit of 8K max sampling)
@@ -43,9 +45,14 @@ typedef union gyroLowpassFilter_u {
 
 typedef struct gyro_s {
     uint32_t targetLooptime;
+    uint32_t sampleLooptime;
     float scale;
     float gyroADC[XYZ_AXIS_COUNT];     // aligned, calibrated, scaled, but unfiltered data from the sensor(s)
     float gyroADCf[XYZ_AXIS_COUNT];    // filtered gyro data
+    uint8_t sampleCount;               // gyro sensor sample counter
+    float sampleSum[XYZ_AXIS_COUNT];   // summed samples used for downsampling
+    uint16_t downsample_filter_hz;     // downsample filter cutoff frequency (0 means use averaging)
+    pt1Filter_t gyroDownsampleFilter[XYZ_AXIS_COUNT]; // pt1 filter used for gyro downsampling
 
     gyroDev_t *rawSensorDev;           // pointer to the sensor providing the raw data for DEBUG_GYRO_RAW
 
@@ -75,6 +82,7 @@ typedef struct gyro_s {
 } gyro_t;
 
 extern gyro_t gyro;
+extern uint8_t activePidLoopDenom;
 
 enum {
     GYRO_OVERFLOW_CHECK_NONE = 0,
@@ -109,7 +117,6 @@ typedef enum gyroDetectionFlags_e {
 
 typedef struct gyroConfig_s {
     uint8_t  gyroMovementCalibrationThreshold; // people keep forgetting that moving model while init results in wrong gyro offsets. and then they never reset gyro. so this is now on by default.
-    uint8_t  gyro_sync_denom;                  // Gyro sample divider
     uint8_t  gyro_hardware_lpf;                // gyro DLPF setting
 
     uint8_t  gyro_high_fsr;
@@ -143,15 +150,17 @@ typedef struct gyroConfig_s {
     uint16_t dyn_notch_min_hz;
 
     uint8_t  gyro_filter_debug_axis;
+    uint16_t gyro_downsample_hz;         // cutoff frequency used for the gyro downsampling
 } gyroConfig_t;
 
 PG_DECLARE(gyroConfig_t, gyroConfig);
 
 void gyroPreInit(void);
-bool gyroInit(void);
-
+bool gyroInit();
+void gyroSetFilterDenom(uint8_t pidDenom);
 void gyroInitFilters(void);
-void gyroUpdate(timeUs_t currentTimeUs);
+void gyroUpdate(void);
+void gyroFiltering(timeUs_t currentTimeUs);
 bool gyroGetAccumulationAverage(float *accumulation);
 const busDevice_t *gyroSensorBus(void);
 struct mpuDetectionResult_s;

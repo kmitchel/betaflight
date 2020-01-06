@@ -71,10 +71,6 @@
 #define BEEPER_PWM_HZ   0
 #endif
 
-#if FLASH_SIZE > 64
-#define BEEPER_NAMES
-#endif
-
 #define MAX_MULTI_BEEPS 64   //size limit for 'beep_multiBeeps[]'
 
 #define BEEPER_COMMAND_REPEAT 0xFE
@@ -197,12 +193,12 @@ typedef struct beeperTableEntry_s {
     uint8_t mode;
     uint8_t priority; // 0 = Highest
     const uint8_t *sequence;
-#ifdef BEEPER_NAMES
+#ifdef USE_BEEPER_NAMES
     const char *name;
 #endif
 } beeperTableEntry_t;
 
-#ifdef BEEPER_NAMES
+#ifdef USE_BEEPER_NAMES
 #define BEEPER_ENTRY(a,b,c,d) a,b,c,d
 #else
 #define BEEPER_ENTRY(a,b,c,d) a,b,c
@@ -496,7 +492,7 @@ uint32_t beeperModeMaskForTableIndex(int idx)
  */
 const char *beeperNameForTableIndex(int idx)
 {
-#ifndef BEEPER_NAMES
+#ifndef USE_BEEPER_NAMES
     UNUSED(idx);
     return NULL;
 #else

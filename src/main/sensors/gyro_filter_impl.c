@@ -23,11 +23,28 @@
 static FAST_CODE void GYRO_FILTER_FUNCTION_NAME(void)
 {
     for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+        // DEBUG_GYRO_RAW records the raw value read from the sensor (not zero offset, not scaled)
         GYRO_FILTER_DEBUG_SET(DEBUG_GYRO_RAW, axis, gyro.rawSensorDev->gyroADCRaw[axis]);
-        // scale gyro output to degrees per second
-        float gyroADCf = gyro.gyroADC[axis];
+
         // DEBUG_GYRO_SCALED records the unfiltered, scaled gyro output
-        GYRO_FILTER_DEBUG_SET(DEBUG_GYRO_SCALED, axis, lrintf(gyroADCf));
+        // If downsampling than the last value in the sample group will be output
+        GYRO_FILTER_DEBUG_SET(DEBUG_GYRO_SCALED, axis, lrintf(gyro.gyroADC[axis]));
+
+        // downsample the individual gyro samples
+        float gyroADCf = 0;
+        if (gyro.downsample_filter_hz) {
+            // using pt1 filter for downsampling
+            gyroADCf = gyro.sampleSum[axis];
+        } else {
+            // using simple average for downsampling
+            if (gyro.sampleCount) {
+                gyroADCf = gyro.sampleSum[axis] / gyro.sampleCount;
+            }
+            gyro.sampleSum[axis] = 0;
+        }
+
+        // DEBUG_GYRO_DOWNSAMPLE records the downsampled, unfiltered, scaled gyro output
+        GYRO_FILTER_DEBUG_SET(DEBUG_GYRO_DOWNSAMPLE, axis, lrintf(gyroADCf));
 
 #ifdef USE_GYRO_DATA_ANALYSE
         if (isDynamicFilterActive()) {
@@ -68,4 +85,5 @@ static FAST_CODE void GYRO_FILTER_FUNCTION_NAME(void)
 
         gyro.gyroADCf[axis] = gyroADCf;
     }
+    gyro.sampleCount = 0;
 }

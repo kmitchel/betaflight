@@ -712,9 +712,10 @@ void init(void)
 
     systemState |= SYSTEM_STATE_SENSORS_READY;
 
-    // gyro.targetLooptime set in sensorsAutodetect(),
-    // so we are ready to call validateAndFixGyroConfig(), pidInit(), and setAccelerationFilter()
     validateAndFixGyroConfig();
+    // gyro.targetLooptime set in gyroInitFilters(),
+    gyroSetFilterDenom(pidConfig()->pid_process_denom);
+    gyroInitFilters();
     pidInit(currentPidProfile);
 #ifdef USE_ACC
     accInitFilters();

@@ -4671,11 +4671,11 @@ static void cliStatus(char *cmdline)
 
     // Run status
 
-    const int gyroRate = getTaskDeltaTime(TASK_GYROPID) == 0 ? 0 : (int)(1000000.0f / ((float)getTaskDeltaTime(TASK_GYROPID)));
+    const int gyroRate = getTaskDeltaTime(TASK_GYRO) == 0 ? 0 : (int)(1000000.0f / ((float)getTaskDeltaTime(TASK_GYRO)));
     const int rxRate = currentRxRefreshRate == 0 ? 0 : (int)(1000000.0f / ((float)currentRxRefreshRate));
     const int systemRate = getTaskDeltaTime(TASK_SYSTEM) == 0 ? 0 : (int)(1000000.0f / ((float)getTaskDeltaTime(TASK_SYSTEM)));
     cliPrintLinef("CPU:%d%%, cycle time: %d, GYRO rate: %d, RX rate: %d, System rate: %d",
-            constrain(averageSystemLoadPercent, 0, 100), getTaskDeltaTime(TASK_GYROPID), gyroRate, rxRate, systemRate);
+            constrain(averageSystemLoadPercent, 0, 100), getTaskDeltaTime(TASK_GYRO), gyroRate, rxRate, systemRate);
 
     // Battery meter
 
@@ -4722,21 +4722,8 @@ static void cliTasks(char *cmdline)
         cfTaskInfo_t taskInfo;
         getTaskInfo(taskId, &taskInfo);
         if (taskInfo.isEnabled) {
-            int taskFrequency;
-            int subTaskFrequency = 0;
-            if (taskId == TASK_GYROPID) {
-                subTaskFrequency = taskInfo.movingAverageCycleTime == 0.0f ? 0.0f : (int)(1000000.0f / (taskInfo.movingAverageCycleTime));
-                taskFrequency = subTaskFrequency / pidConfig()->pid_process_denom;
-                if (pidConfig()->pid_process_denom > 1) {
-                    cliPrintf("%02d - (%15s) ", taskId, taskInfo.taskName);
-                } else {
-                    taskFrequency = subTaskFrequency;
-                    cliPrintf("%02d - (%11s/%3s) ", taskId, taskInfo.subTaskName, taskInfo.taskName);
-                }
-            } else {
-                taskFrequency = taskInfo.averageDeltaTime == 0 ? 0 : (int)(1000000.0f / ((float)taskInfo.averageDeltaTime));
-                cliPrintf("%02d - (%15s) ", taskId, taskInfo.taskName);
-            }
+            int taskFrequency = taskInfo.averageDeltaTime == 0 ? 0 : (int)(1000000.0f / ((float)taskInfo.averageDeltaTime));
+            cliPrintf("%02d - (%15s) ", taskId, taskInfo.taskName);
             const int maxLoad = taskInfo.maxExecutionTime == 0 ? 0 :(taskInfo.maxExecutionTime * taskFrequency + 5000) / 1000;
             const int averageLoad = taskInfo.averageExecutionTime == 0 ? 0 : (taskInfo.averageExecutionTime * taskFrequency + 5000) / 1000;
             if (taskId != TASK_SERIAL) {
@@ -4749,9 +4736,6 @@ static void cliTasks(char *cmdline)
                         maxLoad/10, maxLoad%10, averageLoad/10, averageLoad%10, taskInfo.totalExecutionTime / 1000);
             } else {
                 cliPrintLinef("%6d", taskFrequency);
-            }
-            if (taskId == TASK_GYROPID && pidConfig()->pid_process_denom > 1) {
-                cliPrintLinef("   - (%15s) %6d", taskInfo.subTaskName, subTaskFrequency);
             }
 
             schedulerResetTaskMaxExecutionTime(taskId);

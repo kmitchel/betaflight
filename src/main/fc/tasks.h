@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include "scheduler/scheduler.h"
+
 #define LOOPTIME_SUSPEND_TIME 3  // Prevent too long busy wait times
 
 void tasksInit(void);

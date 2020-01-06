@@ -589,15 +589,6 @@ void validateAndFixGyroConfig(void)
     }
 #endif
 
-    if (gyroConfig()->gyro_hardware_lpf == GYRO_HARDWARE_LPF_1KHZ_SAMPLE) {
-        pidConfigMutable()->pid_process_denom = 1; // When gyro set to 1khz always set pid speed 1:1 to sampling speed
-        gyroConfigMutable()->gyro_sync_denom = 1;
-    }
-
-#if defined(STM32F1)
-    gyroConfigMutable()->gyro_sync_denom = MAX(gyroConfig()->gyro_sync_denom, 3);
-#endif
-
     float samplingTime;
     switch (gyroMpuDetectionResult()->sensor) {
     case ICM_20649_SPI:
@@ -609,16 +600,6 @@ void validateAndFixGyroConfig(void)
     default:
         samplingTime = 0.000125f;
         break;
-    }
-    if (gyroConfig()->gyro_hardware_lpf == GYRO_HARDWARE_LPF_1KHZ_SAMPLE) {
-        switch (gyroMpuDetectionResult()->sensor) {
-        case ICM_20649_SPI:
-            samplingTime = 1.0f / 1100.0f;
-            break;
-        default:
-            samplingTime = 0.001f;
-            break;
-        }
     }
 
 
@@ -654,9 +635,9 @@ void validateAndFixGyroConfig(void)
             motorConfigMutable()->dev.motorPwmRate = MIN(motorConfig()->dev.motorPwmRate, maxEscRate);
         }
     } else {
-        const float pidLooptime = samplingTime * gyroConfig()->gyro_sync_denom * pidConfig()->pid_process_denom;
+        const float pidLooptime = samplingTime * pidConfig()->pid_process_denom;
         if (pidLooptime < motorUpdateRestriction) {
-            const uint8_t minPidProcessDenom = constrain(motorUpdateRestriction / (samplingTime * gyroConfig()->gyro_sync_denom), 1, MAX_PID_PROCESS_DENOM);
+            const uint8_t minPidProcessDenom = constrain(motorUpdateRestriction / samplingTime, 1, MAX_PID_PROCESS_DENOM);
             pidConfigMutable()->pid_process_denom = MAX(pidConfigMutable()->pid_process_denom, minPidProcessDenom);
         }
     }

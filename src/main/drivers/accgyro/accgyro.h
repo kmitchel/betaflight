@@ -59,16 +59,10 @@ typedef enum {
 
 typedef enum {
     GYRO_HARDWARE_LPF_NORMAL,
-    GYRO_HARDWARE_LPF_1KHZ_SAMPLE,
 #ifdef USE_GYRO_DLPF_EXPERIMENTAL
     GYRO_HARDWARE_LPF_EXPERIMENTAL
 #endif
 } gyroHardwareLpf_e;
-
-typedef enum {
-    GYRO_32KHZ_HARDWARE_LPF_NORMAL,
-    GYRO_32KHZ_HARDWARE_LPF_EXPERIMENTAL
-} gyro32khzHardwareLpf;
 
 typedef enum {
     GYRO_RATE_1_kHz,
@@ -106,6 +100,7 @@ typedef struct gyroDev_s {
     uint8_t gyroHasOverflowProtection;
     gyroHardware_e gyroHardware;
     fp_rotationMatrix_t rotationMatrix;
+    uint32_t sampleLooptime;
 } gyroDev_t;
 
 typedef struct accDev_s {

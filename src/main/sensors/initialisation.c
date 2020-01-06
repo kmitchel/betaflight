@@ -33,6 +33,8 @@
 #include "config/config.h"
 #include "fc/runtime_config.h"
 
+#include "flight/pid.h"
+
 #include "sensors/sensors.h"
 #include "sensors/adcinternal.h"
 #include "sensors/acceleration.h"
