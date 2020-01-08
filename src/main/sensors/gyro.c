@@ -1097,11 +1097,11 @@ FAST_CODE void gyroUpdate(timeUs_t currentTimeUs)
         filterGyroDebug();
     }
 
-#ifdef USE_GYRO_DATA_ANALYSE
-    if (isDynamicFilterActive()) {
-        gyroDataAnalyse(&gyro.gyroAnalyseState, gyro.notchFilterDyn, gyro.notchFilterDyn2);
-    }
-#endif
+// #ifdef USE_GYRO_DATA_ANALYSE
+//     if (isDynamicFilterActive()) {
+//         gyroDataAnalyse(&gyro.gyroAnalyseState, gyro.notchFilterDyn, gyro.notchFilterDyn2);
+//     }
+// #endif
 
     if (useDualGyroDebugging) {
         switch (gyroToUse) {

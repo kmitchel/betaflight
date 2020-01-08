@@ -1329,6 +1329,12 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
     rpmFilterUpdate();
 #endif
 
+#ifdef USE_GYRO_DATA_ANALYSE
+//    if (isDynamicFilterActive()) {
+        gyroDataAnalyse(&gyro.gyroAnalyseState, gyro.notchFilterDyn, gyro.notchFilterDyn2);
+//    }
+#endif
+
 #ifdef USE_INTERPOLATED_SP
     bool newRcFrame = false;
     if (lastFrameNumber != getRcFrameNumber()) {
@@ -1448,6 +1454,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
             // loop execution to be delayed.
             const float delta =
                 - (gyroRateDterm[axis] - previousGyroRateDterm[axis]) * pidFrequency;
+            gyroDataAnalysePush(&gyro.gyroAnalyseState, axis, delta);
 
 #if defined(USE_ACC)
             if (cmpTimeUs(currentTimeUs, levelModeStartTimeUs) > CRASH_RECOVERY_DETECTION_DELAY_US) {

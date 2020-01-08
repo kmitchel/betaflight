@@ -41,6 +41,7 @@
 #include "sensors/gyro.h"
 
 #include "fc/core.h"
+#include  "flight/pid.h"
 
 #include "gyroanalyse.h"
 
@@ -152,9 +153,8 @@ void gyroDataAnalyseInit(uint32_t targetLooptimeUs)
     // otherwise we need to calculate a FFT sample frequency to ensure we get 3 samples (gyro loops < 4K)
     const int gyroLoopRateHz = lrintf((1.0f / targetLooptimeUs) * 1e6f);
     
-    fftSamplingRateHz = MIN((gyroLoopRateHz / 3), fftSamplingRateHz); // 1333hz at 8k medium
-
-    fftResolution = (float)fftSamplingRateHz / FFT_WINDOW_SIZE; // 41.65hz per bin for medium
+    fftSamplingRateHz = MIN((gyroLoopRateHz / 3), fftSamplingRateHz);
+    fftSamplingRateHz = 1000;
 
     fftStartBin = MAX(2, dynNotchMinHz / lrintf(fftResolution)); // can't use bin 0
 
@@ -169,6 +169,7 @@ void gyroDataAnalyseInit(uint32_t targetLooptimeUs)
 
 void gyroDataAnalyseStateInit(gyroAnalyseState_t *state, uint32_t targetLooptimeUs)
 {
+    targetLooptimeUs = targetLooptimeUs * pidConfig()->pid_process_denom;
     // initialise even if FEATURE_DYNAMIC_FILTER not set, since it may be set later
     // *** can this next line be removed ??? ***
     gyroDataAnalyseInit(targetLooptimeUs);
