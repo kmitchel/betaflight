@@ -156,14 +156,15 @@ void gyroDataAnalyseInit(uint32_t targetLooptimeUs)
 
     fftResolution = (float)fftSamplingRateHz / FFT_WINDOW_SIZE; // 41.65hz per bin for medium
 
-    fftStartBin = MAX(2, dynNotchMinHz / lrintf(fftResolution)); // can't use bin 0
+    fftStartBin = MAX(2, dynNotchMinHz / lrintf(fftResolution)); // can't use bin 0 because it is DC.
 
     dynNotchMaxCtrHz = fftSamplingRateHz * 0.48; // Stay below Nyquist; frequency at which each axis updates
 
-    smoothFactor = 2 * 3.14f * DYN_NOTCH_SMOOTH_HZ / (gyroLoopRateHz / 12); // minimum PT1 k value
+    smoothFactor = 2 * M_PIf * DYN_NOTCH_SMOOTH_HZ / (gyroLoopRateHz / 12); // minimum PT1 k value
 
     for (int i = 0; i < FFT_WINDOW_SIZE; i++) {
         hanningWindow[i] = (0.5f - 0.5f * cos_approx(2 * M_PIf * i / (FFT_WINDOW_SIZE - 1)));
+        // for testing, to disable, set to hanningWindow[i] = 1.0f;
     }
 }
 
@@ -180,8 +181,8 @@ void gyroDataAnalyseStateInit(gyroAnalyseState_t *state, uint32_t targetLooptime
     arm_rfft_fast_init_f32(&state->fftInstance, FFT_WINDOW_SIZE);
 
 //    recalculation of filters takes 4 calls per axis => each filter gets updated every DYN_NOTCH_CALC_TICKS calls
-//    at 4khz gyro loop rate this means 8khz / 4 / 3 = 666Hz => update every 1.5ms
-//    at 4khz gyro loop rate this means 4khz / 4 / 3 = 333Hz => update every 3ms
+//    at 4kHz gyro loop rate this means 8kHz / 4 / 3 = 666Hz => update every 1.5ms
+//    at 4kHz gyro loop rate this means 4kHz / 4 / 3 = 333Hz => update every 3ms
 //    for gyro rate > 16kHz, we have update frequency of 1kHz => 1ms
     for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
         // any init value
@@ -327,7 +328,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
             if (binMax == 0) { // no bin increase, hold prev max bin, dataMin = 1 dataMax = 0, ie move slow
                 binMax = lrintf(state->centerFreq[state->updateAxis] / fftResolution);
             } else { // there was a max, look backwards for min, don't compare to bin 0
-                for (int i = binMax; i > 1; i--) {
+                for (int i = binMax - 1; i > 1; i--) {
                     if (state->fftData[i] < state->fftData[i - 1]) { // up step below this one
                         dataMin = state->fftData[i]; // set min if smaller exists before max
                         break;
@@ -353,6 +354,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
                 squaredData = state->fftData[binMax] * state->fftData[binMax];
                 fftSum += squaredData;
                 fftWeightedSum += squaredData * binMax;
+                binMax += 1;
             }
 
             // get centerFreq in Hz from weighted bins
@@ -361,6 +363,10 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
             if (fftSum > 0) {
                 fftMeanIndex = (fftWeightedSum / fftSum);
                 centerFreq = fftMeanIndex * fftResolution;
+                // the above may not be optimal.  In theory, the index points to the centre frequency of the bin.
+                // at 1333hz has bin widths 41.65Hz, so bin 2 has the range 83,3Hz and 124,95Hz
+                // maybe should be centerFreq = (fftMeanIndex + 0.5) * fftResolution;
+                // empirical checking says not adding 0.5 works well
             } else {
                 centerFreq = state->centerFreq[state->updateAxis];
             }
