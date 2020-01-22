@@ -53,10 +53,13 @@
 // maxSampleCount recent gyro values are accumulated and averaged
 // to ensure that 32 samples are collected at the right rate for the required FFT bandwidth
 
-// For DYN_NOTCH_RANGE_HZ_MEDIUM, fftSamplingRateHz is 1333Hz (gyro.h ~90)
-// For an 8k gyro loop, maxSampleCount = 6.  This means 6 sequential gyro data points are averaged
-//   (For a 4k gyro loop, maxSampleCount is 3; 3 gyro data points are averaged)
-//   (I'm not sure how this would work at 2k, but it should work at 1.333k)
+// For an 8k gyro loop, at default 600hz max, 6 sequential gyro data points are averaged, FFT runs 1333Hz.
+// Upper limit of FFT is half that frequency, eg 666Hz by default.
+// At 8k, with a max of 300, int(8000/600) = 13, fftSamplingRateHz = 615Hz, range 307Hz
+// Note that lower max requires more samples to be averaged, increasing precision but taking longer to get enough samples.
+// For Bosch at 3200Hz gyro, max of 600, int(3200/1200) = 2, fftSamplingRateHz = 1600, range to 800hz
+// For Bosch on XClass, better to set a max of 300, int(3200/600) = 5, fftSamplingRateHz = 640, range to 320Hz
+// 
 // When sampleCount reaches maxSampleCount, the averaged gyro value is put into the circular buffer of 32 samples
 // Hence the FFT input buffer takes 32 * 0.75ms = 24ms to completely be filled with clean new values
 
@@ -76,20 +79,6 @@
 // for LOW we get 16 x 31.25ms bins to 500hz, 
 // for HIGH we get 16 x 62.5ms bins to 1000Hz
 
-// ** issues and notes **
-// 1.  The updateTicks counter seems useless unless we are running 32k, so isn't needed currently.
-// DYN_NOTCH_CALC_TICKS is a value set to XYZ_AXIS_COUNT * 4, ie 12
-// it stops gyroDataAnalyseUpdate once all 12 iterations have calculated the FFT for each axis
-// when sampleCount is complete (new FFT value arrives), the updateTicks counter is reset to 12
-// it then starts counting down to zero, and while non-zero, gyroDataAnalyseUpdate is called
-// at 8k, MEDIUM, sampleCount is complete every 6 loops, so updateTicks never, reaches zero.
-
-// 2..Is 2k gyro loop likely to work?
-
-// 3.  What about Bosch gyro loop rates?  
-
-// 4.  does gyroDataAnalyseInit need to be called every time gyroDataAnalyseStateInit is called ??
-
 //#define FFT_WINDOW_SIZE 32  -> this is in gyroanalyse.h
 #define DYN_NOTCH_SMOOTH_HZ 5
 #define FFT_BIN_COUNT             (FFT_WINDOW_SIZE / 2) // 16
@@ -99,16 +88,15 @@
 static uint16_t FAST_RAM_ZERO_INIT   fftSamplingRateHz;
 static float FAST_RAM_ZERO_INIT      fftResolution;
 static uint8_t FAST_RAM_ZERO_INIT    fftStartBin;
-static uint16_t FAST_RAM_ZERO_INIT   dynNotchMaxCtrHz;
-static uint8_t                       dynamicFilterRange;
 static float FAST_RAM_ZERO_INIT      dynNotchQ;
 static float FAST_RAM_ZERO_INIT      dynNotch1Ctr;
 static float FAST_RAM_ZERO_INIT      dynNotch2Ctr;
 static uint16_t FAST_RAM_ZERO_INIT   dynNotchMinHz;
+static uint16_t FAST_RAM_ZERO_INIT   dynNotchMaxHz;
 static bool FAST_RAM                 dualNotch = true;
 static uint16_t FAST_RAM_ZERO_INIT   dynNotchMaxFFT;
 static float FAST_RAM_ZERO_INIT      smoothFactor;
-
+static uint8_t FAST_RAM_ZERO_INIT    samples;
 // Hanning window, see https://en.wikipedia.org/wiki/Window_function#Hann_.28Hanning.29_window
 static FAST_RAM_ZERO_INIT float hanningWindow[FFT_WINDOW_SIZE];
 
@@ -122,44 +110,29 @@ void gyroDataAnalyseInit(uint32_t targetLooptimeUs)
     gyroAnalyseInitialized = true;
 #endif
 
-    dynamicFilterRange = gyroConfig()->dyn_notch_range;
-    fftSamplingRateHz = DYN_NOTCH_RANGE_HZ_LOW;
     dynNotch1Ctr = 1 - gyroConfig()->dyn_notch_width_percent / 100.0f;
     dynNotch2Ctr = 1 + gyroConfig()->dyn_notch_width_percent / 100.0f;
     dynNotchQ = gyroConfig()->dyn_notch_q / 100.0f;
     dynNotchMinHz = gyroConfig()->dyn_notch_min_hz;
+    dynNotchMaxHz = MAX(2 * dynNotchMinHz, gyroConfig()->dyn_notch_max_hz);
 
     if (gyroConfig()->dyn_notch_width_percent == 0) {
         dualNotch = false;
     }
 
-    if (dynamicFilterRange == DYN_NOTCH_RANGE_AUTO) {
-        if (gyroConfig()->dyn_lpf_gyro_max_hz > 333) {
-            fftSamplingRateHz = DYN_NOTCH_RANGE_HZ_MEDIUM;
-        }
-        if (gyroConfig()->dyn_lpf_gyro_max_hz > 610) {
-            fftSamplingRateHz = DYN_NOTCH_RANGE_HZ_HIGH;
-        }
-    } else {
-        if (dynamicFilterRange == DYN_NOTCH_RANGE_HIGH) {
-            fftSamplingRateHz = DYN_NOTCH_RANGE_HZ_HIGH;
-        }
-        else if (dynamicFilterRange == DYN_NOTCH_RANGE_MEDIUM) {
-            fftSamplingRateHz = DYN_NOTCH_RANGE_HZ_MEDIUM;
-        }
-    }
-    // If we get at least 3 samples then use the default FFT sample frequency
-    // otherwise we need to calculate a FFT sample frequency to ensure we get 3 samples (gyro loops < 4K)
     const int gyroLoopRateHz = lrintf((1.0f / targetLooptimeUs) * 1e6f);
-    
-    fftSamplingRateHz = MIN((gyroLoopRateHz / 3), fftSamplingRateHz); // 1333hz at 8k medium
+    samples = MAX(1, gyroLoopRateHz / (2 * dynNotchMaxHz)); //600hz, 8k looptime, 13.333
+
+    fftSamplingRateHz = gyroLoopRateHz / samples; 
+    // eg 8k, user max 600hz, int(8000/1200) = 6 (6.666), fftSamplingRateHz = 1333hz, range 666Hz
+    // eg 4k, user max 600hz, int(4000/1200) = 3 (3.333), fftSamplingRateHz = 1333hz, range 666Hz
+    // eg 2k, user max 600hz, int(2000/1200) = 1 (1.666) fftSamplingRateHz = 2000hz, range 1000Hz
+    // eg 2k, user max 400hz, int(2000/800) = 2 (2.5) fftSamplingRateHz = 1000hz, range 500Hz
+    // eg 1k, user max 600hz, int(1000/1200) = 1 (max(1,0.8333)) fftSamplingRateHz = 1000hz, range 500Hz
+    // the upper limit of DN is always going to be Nyquist
 
     fftResolution = (float)fftSamplingRateHz / FFT_WINDOW_SIZE; // 41.65hz per bin for medium
-
     fftStartBin = MAX(2, dynNotchMinHz / lrintf(fftResolution)); // can't use bin 0 because it is DC.
-
-    dynNotchMaxCtrHz = fftSamplingRateHz * 0.48; // Stay below Nyquist; frequency at which each axis updates
-
     smoothFactor = 2 * M_PIf * DYN_NOTCH_SMOOTH_HZ / (gyroLoopRateHz / 12); // minimum PT1 k value
 
     for (int i = 0; i < FFT_WINDOW_SIZE; i++) {
@@ -174,9 +147,10 @@ void gyroDataAnalyseStateInit(gyroAnalyseState_t *state, uint32_t targetLooptime
     // *** can this next line be removed ??? ***
     gyroDataAnalyseInit(targetLooptimeUs);
 
-    const uint16_t samplingFrequency = 1000000 / targetLooptimeUs;
-    state->maxSampleCount = samplingFrequency / fftSamplingRateHz;
-    state->maxSampleCountRcp = 1.f / state->maxSampleCount;
+//    const uint16_t samplingFrequency = 1000000 / targetLooptimeUs;
+//    state->maxSampleCount = samplingFrequency / fftSamplingRateHz;
+    state->maxSampleCount = samples;
+    state->maxSampleCountRcp = 1.0f / state->maxSampleCount;
 
     arm_rfft_fast_init_f32(&state->fftInstance, FFT_WINDOW_SIZE);
 
@@ -186,7 +160,7 @@ void gyroDataAnalyseStateInit(gyroAnalyseState_t *state, uint32_t targetLooptime
 //    for gyro rate > 16kHz, we have update frequency of 1kHz => 1ms
     for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
         // any init value
-        state->centerFreq[axis] = dynNotchMaxCtrHz;
+        state->centerFreq[axis] = dynNotchMaxHz;
     }
 }
 
@@ -365,7 +339,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
             }
 
             // get centerFreq in Hz from weighted bins
-            float centerFreq = dynNotchMaxCtrHz;
+            float centerFreq = dynNotchMaxHz;
             float fftMeanIndex = 0;
             if (fftSum > 0) {
                 fftMeanIndex = (fftWeightedSum / fftSum);
@@ -377,7 +351,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
             } else {
                 centerFreq = state->centerFreq[state->updateAxis];
             }
-            centerFreq = constrainf(centerFreq, dynNotchMinHz, dynNotchMaxCtrHz);
+            centerFreq = constrainf(centerFreq, dynNotchMinHz, dynNotchMaxHz);
 
             // PT1 style dynamic smoothing moves rapidly towards big peaks and slowly away, up to 5x faster
             float dynamicFactor = constrainf(dataMax / dataMin, 1.0f, 5.0f);
