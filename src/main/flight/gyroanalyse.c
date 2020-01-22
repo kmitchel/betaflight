@@ -315,26 +315,33 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
             // identify max bin and max/min heights 
             float dataMax = 0.0f;
             float dataMin = 1.0f;
-            uint8_t binMax = 0; 
+            uint8_t binMax = 0;
+            float dataMinHi = 1.0f;
             for (int i = fftStartBin; i < FFT_BIN_COUNT; i++) {
                 if (state->fftData[i] > state->fftData[i - 1]) { // bin height increased
                     if (state->fftData[i] > dataMax) {
                         dataMax = state->fftData[i];
-                        dataMin = state->fftData[i];
-                        binMax = i;  // tallest bin
+                        binMax = i;  // tallest bin so far
                     }
                 }
             }
             if (binMax == 0) { // no bin increase, hold prev max bin, dataMin = 1 dataMax = 0, ie move slow
                 binMax = lrintf(state->centerFreq[state->updateAxis] / fftResolution);
-            } else { // there was a max, look backwards for min, don't compare to bin 0
-                for (int i = binMax - 1; i > 1; i--) {
-                    if (state->fftData[i] < state->fftData[i - 1]) { // up step below this one
-                        dataMin = state->fftData[i]; // set min if smaller exists before max
+            } else { // there was a max, find min
+                for (int i = binMax - 1; i > 1; i--) { // look for min below max
+                    dataMin = state->fftData[i];
+                    if (state->fftData[i - 1] > state->fftData[i]) { // up step below this one
+                        break;
+                    }
+                }
+                for (int i = binMax + 1; i < (FFT_BIN_COUNT - 1); i++) { // // look for min above max
+                    dataMinHi = state->fftData[i];
+                    if (state->fftData[i] < state->fftData[i + 1]) { // up step above this one
                         break;
                     }
                 }
             }
+            dataMin = fminf(dataMin, dataMinHi);
 
             // accumulate fftSum and fftWeightedSum from peak bin, and shoulder bins either side of peak
             float squaredData = state->fftData[binMax] * state->fftData[binMax];
@@ -348,7 +355,7 @@ static FAST_CODE_NOINLINE void gyroDataAnalyseUpdate(gyroAnalyseState_t *state, 
                 fftWeightedSum += squaredData * binMax;
             }
             binMax -= 1;
-            // accumulate lower shoulder unless lower shoulder would be bin 0
+            // accumulate lower shoulder unless lower shoulder would be bin 0 (DC)
             if (binMax > 1){
                 binMax -= 1;
                 squaredData = state->fftData[binMax] * state->fftData[binMax];
