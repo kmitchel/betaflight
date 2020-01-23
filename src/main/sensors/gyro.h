@@ -91,6 +91,13 @@ enum {
 };
 
 enum {
+    DYN_NOTCH_RANGE_HIGH = 0,
+    DYN_NOTCH_RANGE_MEDIUM,
+    DYN_NOTCH_RANGE_LOW,
+    DYN_NOTCH_RANGE_AUTO
+};
+
+enum {
     DYN_LPF_NONE = 0,
     DYN_LPF_PT1,
     DYN_LPF_BIQUAD
@@ -147,6 +154,7 @@ typedef struct gyroConfig_s {
     uint16_t dyn_notch_max_hz;
     uint8_t  dyn_notch_width_percent;
     uint16_t dyn_notch_q;
+    uint8_t  dyn_notch_range; 
     uint16_t dyn_notch_min_hz;
 
     uint8_t  gyro_filter_debug_axis;
